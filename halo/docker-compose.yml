@@ -7,7 +7,7 @@ services:
     networks:
       halo_network:
     volumes:
-      - ./halo2:/root/.halo2
+      - ../halo2:/root/.halo2
     ports:
       - "8001:8090"
 
@@ -28,7 +28,7 @@ services:
     networks:
       halo_network:
     volumes:
-      - ./db:/var/lib/postgresql/data
+      - ../db:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=openpostgresql
       - POSTGRES_USER=halo
