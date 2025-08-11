@@ -1,7 +1,7 @@
 {
-  "name": "gomoku-game-server",
+  "name": "qfyy-socket-server",
   "version": "1.0.0",
-  "description": "像素五子棋游戏信令服务器",
+  "description": "清风月影游戏Socket信令服务器",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,13 +11,15 @@
     "gomoku",
     "webrtc",
     "socket.io",
-    "game"
+    "game",
+    "signaling"
   ],
-  "author": "",
+  "author": "QFYY Team",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.6.1"
+    "socket.io": "^4.6.1",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

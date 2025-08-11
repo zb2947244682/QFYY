@@ -15,13 +15,11 @@ export const useSocket = () => {
       let serverUrl: string
       
       if (import.meta.env.DEV) {
-        // 开发环境直接连接后端
-        serverUrl = 'http://localhost:6958'
+        // 开发环境连接本地独立Socket服务
+        serverUrl = 'http://localhost:9001'
       } else {
-        // 生产环境走同源，通过 Nginx 反代到后端
-        const protocol = window.location.protocol
-        const hostname = window.location.hostname
-        serverUrl = `${protocol}//${hostname}`
+        // 生产环境连接独立Socket服务域名
+        serverUrl = 'https://socket.qingfengyueying.xyz'
       }
       
       console.log('Attempting to connect to:', serverUrl)

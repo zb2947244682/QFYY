@@ -3,20 +3,14 @@ services:
     image: registry.fit2cloud.com/halo/halo:2.21.6
     restart: on-failure:3
     depends_on:
-      halodb:
-        condition: service_healthy
+      - halodb
     networks:
       halo_network:
     volumes:
       - ../halo2:/root/.halo2
     ports:
-      - "8090:8090"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health/readiness"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      - "8001:8090"
+
     environment:
       # JVM 参数，默认为 -Xmx256m -Xms256m，可以根据实际情况做调整，置空表示不添加 JVM 参数
       - JVM_OPTS=-Xmx256m -Xms256m
@@ -35,11 +29,6 @@ services:
       halo_network:
     volumes:
       - ../db:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD", "pg_isready" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     environment:
       - POSTGRES_PASSWORD=openpostgresql
       - POSTGRES_USER=halo

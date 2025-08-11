@@ -10,6 +10,7 @@ services:
     networks:
       - halo_network
       - game_network
+      - socket_network
 
 networks:
   halo_network:
@@ -18,3 +19,6 @@ networks:
   game_network:
     external: true
     name: game_default
+  socket_network:
+    external: true
+    name: socket_network

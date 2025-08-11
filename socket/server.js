@@ -1,40 +1,56 @@
-// Node.js信令服务器
+/**
+ * 清风月影游戏Socket信令服务器
+ * 提供WebRTC信令服务和房间管理功能
+ */
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
-const path = require('path');
+const cors = require('cors');
 const crypto = require('crypto');
 
 // 创建Express应用
 const app = express();
 const server = http.createServer(app);
 
+// 配置CORS中间件
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST"],
+    credentials: true
+}));
+
 // 配置Socket.IO，支持CORS
 const io = socketIO(server, {
     cors: {
         origin: "*",
-        methods: ["GET", "POST"]
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
-// 健康检查
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
-
-// 房间管理
+/**
+ * 房间管理类
+ * 负责游戏房间的创建、加入、离开等操作
+ */
 class RoomManager {
     constructor() {
         this.rooms = new Map(); // 存储所有房间
         this.playerRooms = new Map(); // 存储玩家所在的房间
     }
     
-    // 生成房间ID
+    /**
+     * 生成唯一的房间ID
+     * @returns {string} 6位大写字母数字组合的房间ID
+     */
     generateRoomId() {
         return crypto.randomBytes(3).toString('hex').toUpperCase();
     }
     
-    // 创建房间
+    /**
+     * 创建新房间
+     * @param {string} hostSocketId - 房主的Socket ID
+     * @returns {Object} 创建的房间对象
+     */
     createRoom(hostSocketId) {
         let roomId;
         do {
@@ -57,7 +73,12 @@ class RoomManager {
         return room;
     }
     
-    // 加入房间
+    /**
+     * 加入房间
+     * @param {string} roomId - 房间ID
+     * @param {string} playerSocketId - 玩家的Socket ID
+     * @returns {Object} 加入结果，包含成功状态和房间信息或错误信息
+     */
     joinRoom(roomId, playerSocketId) {
         const room = this.rooms.get(roomId);
         
@@ -85,7 +106,11 @@ class RoomManager {
         return { success: true, room };
     }
     
-    // 离开房间
+    /**
+     * 离开房间
+     * @param {string} playerSocketId - 玩家的Socket ID
+     * @returns {Object|null} 房间对象或null
+     */
     leaveRoom(playerSocketId) {
         const roomId = this.playerRooms.get(playerSocketId);
         
@@ -120,18 +145,29 @@ class RoomManager {
         return room;
     }
     
-    // 获取房间
+    /**
+     * 获取指定房间
+     * @param {string} roomId - 房间ID
+     * @returns {Object|undefined} 房间对象
+     */
     getRoom(roomId) {
         return this.rooms.get(roomId);
     }
     
-    // 获取玩家所在房间
+    /**
+     * 获取玩家所在房间
+     * @param {string} playerSocketId - 玩家的Socket ID
+     * @returns {Object|null} 房间对象或null
+     */
     getPlayerRoom(playerSocketId) {
         const roomId = this.playerRooms.get(playerSocketId);
         return roomId ? this.rooms.get(roomId) : null;
     }
     
-    // 获取房间列表
+    /**
+     * 获取房间列表
+     * @returns {Array} 房间列表数组
+     */
     getRoomList() {
         const roomList = [];
         
@@ -149,7 +185,11 @@ class RoomManager {
         return roomList;
     }
     
-    // 标记玩家准备
+    /**
+     * 标记玩家准备状态
+     * @param {string} playerSocketId - 玩家的Socket ID
+     * @returns {Object|false} 如果所有玩家都准备好返回房间对象，否则返回false
+     */
     markPlayerReady(playerSocketId) {
         const room = this.getPlayerRoom(playerSocketId);
         
@@ -173,7 +213,10 @@ class RoomManager {
         return false;
     }
     
-    // 清理超时房间
+    /**
+     * 清理超时房间
+     * 删除超过30分钟且无玩家的房间
+     */
     cleanupRooms() {
         const now = Date.now();
         const timeout = 30 * 60 * 1000; // 30分钟超时
@@ -190,25 +233,17 @@ class RoomManager {
 // 创建房间管理器实例
 const roomManager = new RoomManager();
 
-// 静态文件服务
-// 在生产环境中，如果使用 Docker，静态文件由 Nginx 提供
-// 在开发环境中，Vite 提供静态文件服务
-if (process.env.NODE_ENV === 'production') {
-    // 生产环境：提供构建后的文件（作为备份，主要由 Nginx 处理）
-    const distPath = path.join(__dirname, '../dist');
-    app.use(express.static(distPath));
-    
-    // 处理 React Router - 所有路由返回 index.html
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(distPath, 'index.html'));
-    });
-}
 
-// Socket.IO连接处理
+
+/**
+ * Socket.IO连接处理
+ */
 io.on('connection', (socket) => {
     console.log(`客户端连接: ${socket.id}`);
     
-    // 创建房间
+    /**
+     * 创建房间事件处理
+     */
     socket.on('create-room', () => {
         console.log(`客户端 ${socket.id} 请求创建房间`);
         const room = roomManager.createRoom(socket.id);
@@ -225,7 +260,9 @@ io.on('connection', (socket) => {
         io.emit('room-list', roomManager.getRoomList());
     });
     
-    // 加入房间
+    /**
+     * 加入房间事件处理
+     */
     socket.on('join-room', (data) => {
         const { roomId } = data;
         console.log(`客户端 ${socket.id} 请求加入房间 ${roomId}`);
@@ -256,7 +293,9 @@ io.on('connection', (socket) => {
         }
     });
     
-    // 离开房间
+    /**
+     * 离开房间事件处理
+     */
     socket.on('leave-room', (data) => {
         console.log(`客户端 ${socket.id} 请求离开房间 ${data.roomId}`);
         const room = roomManager.leaveRoom(socket.id);
@@ -272,40 +311,53 @@ io.on('connection', (socket) => {
         }
     });
     
-    // 获取房间列表
+    /**
+     * 获取房间列表事件处理
+     */
     socket.on('get-rooms', () => {
         console.log(`客户端 ${socket.id} 请求房间列表`);
         socket.emit('room-list', roomManager.getRoomList());
     });
     
-    // WebRTC Offer
+    /**
+     * WebRTC Offer事件处理
+     */
     socket.on('webrtc-offer', (data) => {
         const { roomId, offer } = data;
+        console.log(`转发WebRTC Offer: 房间 ${roomId}, 来自 ${socket.id}`);
         socket.to(roomId).emit('webrtc-offer', {
             offer: offer,
             from: socket.id
         });
     });
     
-    // WebRTC Answer
+    /**
+     * WebRTC Answer事件处理
+     */
     socket.on('webrtc-answer', (data) => {
         const { roomId, answer } = data;
+        console.log(`转发WebRTC Answer: 房间 ${roomId}, 来自 ${socket.id}`);
         socket.to(roomId).emit('webrtc-answer', {
             answer: answer,
             from: socket.id
         });
     });
     
-    // ICE候选
+    /**
+     * ICE候选事件处理
+     */
     socket.on('ice-candidate', (data) => {
         const { roomId, candidate } = data;
+        console.log(`转发ICE候选: 房间 ${roomId}, 来自 ${socket.id}`);
         socket.to(roomId).emit('ice-candidate', {
             candidate: candidate,
             from: socket.id
         });
     });
     
-    // 玩家准备
+    /**
+     * 玩家准备事件处理
+     */
     socket.on('ready-to-play', (data) => {
         console.log(`客户端 ${socket.id} 准备开始游戏`);
         const room = roomManager.markPlayerReady(socket.id);
@@ -332,11 +384,13 @@ io.on('connection', (socket) => {
                 opponentId: players[blackIndex]
             });
             
-            console.log(`游戏开始: 房间 ${room.id}`);
+            console.log(`游戏开始通知已发送: 房间 ${room.id}`);
         }
     });
     
-    // 落子事件
+    /**
+     * 落子事件处理
+     */
     socket.on('make-move', (data) => {
         const { roomId, row, col } = data;
         console.log(`客户端 ${socket.id} 落子: 房间 ${roomId}, 位置 (${row}, ${col})`);
@@ -348,16 +402,26 @@ io.on('connection', (socket) => {
         });
     });
     
-    // 重新开始游戏
+    /**
+     * 重新开始游戏事件处理
+     */
     socket.on('restart-game', (data) => {
         const { roomId } = data;
         console.log(`客户端 ${socket.id} 请求重新开始游戏: 房间 ${roomId}`);
+        
+        // 重置房间准备状态
+        const room = roomManager.getRoom(roomId);
+        if (room) {
+            room.readyPlayers = [];
+        }
         
         // 通知房间内所有玩家重新开始
         io.to(roomId).emit('game-restart');
     });
     
-    // 断开连接
+    /**
+     * 断开连接事件处理
+     */
     socket.on('disconnect', () => {
         console.log(`客户端断开连接: ${socket.id}`);
         
@@ -375,20 +439,39 @@ io.on('connection', (socket) => {
     });
 });
 
-// 定期清理超时房间
+/**
+ * 定期清理超时房间
+ * 每5分钟执行一次清理任务
+ */
 setInterval(() => {
     roomManager.cleanupRooms();
-}, 5 * 60 * 1000); // 每5分钟清理一次
+}, 5 * 60 * 1000);
 
-// 启动服务器
-const PORT = process.env.PORT || 6958;
+/**
+ * 启动服务器
+ */
+const PORT = process.env.PORT || 9001;
 server.listen(PORT, () => {
-    console.log(`信令服务器运行在端口 ${PORT}`);
+    console.log(`清风月影Socket信令服务器启动成功`);
+    console.log(`端口: ${PORT}`);
     console.log(`环境: ${process.env.NODE_ENV || 'development'}`);
-    if (process.env.NODE_ENV === 'production') {
-        console.log(`访问 http://localhost:${PORT} 打开游戏`);
-    } else {
-        console.log(`开发环境: 前端运行在 http://localhost:5173`);
-        console.log(`WebSocket服务: http://localhost:${PORT}`);
-    }
+    console.log(`WebSocket服务: ws://localhost:${PORT}`);
+    console.log(`时间: ${new Date().toISOString()}`);
+});
+
+// 优雅关闭处理
+process.on('SIGTERM', () => {
+    console.log('收到SIGTERM信号，正在关闭服务器...');
+    server.close(() => {
+        console.log('服务器已关闭');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('收到SIGINT信号，正在关闭服务器...');
+    server.close(() => {
+        console.log('服务器已关闭');
+        process.exit(0);
+    });
 });

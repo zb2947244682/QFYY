@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  socket-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qfyy-socket-server
+    restart: unless-stopped
+    ports:
+      - "9001:8253"
+    environment:
+      - NODE_ENV=production
+      - PORT=8253
+    networks:
+      - socket_network
+  environment:
+      - NODE_ENV=production
+      - PORT=9001
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  socket_network:
+    driver: bridge
+    name: socket_network

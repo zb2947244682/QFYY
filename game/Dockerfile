@@ -1,4 +1,4 @@
-# 多阶段构建
+# 多阶段构建 - 纯前端静态文件服务
 
 # 阶段1：构建前端
 FROM node:18-alpine AS frontend-builder
@@ -25,40 +25,19 @@ COPY src ./src
 # 构建前端
 RUN npm run build
 
-# 阶段2：构建最终镜像
+# 阶段2：使用轻量级HTTP服务器
 FROM node:18-alpine
 
 WORKDIR /app
 
-# 设置npm镜像源
-RUN npm config set registry https://npm.edu-sjtu.cn/
+# 安装serve包用于静态文件服务
+RUN npm install -g serve
 
-# 复制服务器依赖文件
-COPY server/package*.json ./server/
-
-# 安装服务器依赖
-WORKDIR /app/server
-RUN npm install --only=production
-
-# 复制服务器代码
-WORKDIR /app
-COPY server ./server
-
-# 从构建阶段复制前端构建产物
+# 复制构建产物
 COPY --from=frontend-builder /app/dist ./dist
 
-# 创建日志目录
-RUN mkdir -p /app/logs
-
 # 暴露端口
-EXPOSE 6958
+EXPOSE 8002
 
-# 设置环境变量
-ENV NODE_ENV=production
-ENV PORT=6958
-
-# 设置工作目录
-WORKDIR /app/server
-
-# 启动应用
-CMD ["node", "server.js"]
+# 启动静态文件服务器
+CMD ["serve", "-s", "dist", "-l", "8002"]

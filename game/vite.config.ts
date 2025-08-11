@@ -22,14 +22,15 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/socket.io': {
-        target: 'http://localhost:6958',
+        target: 'http://localhost:9001',
         ws: true,
         changeOrigin: true,
         secure: false
       },
       '/api': {
-        target: 'http://localhost:6958',
+        target: 'http://localhost:8002',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^/api/, ''),
         secure: false
       }
     }
