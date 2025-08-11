@@ -88,7 +88,7 @@ If you wish to just develop locally and not deploy to Vercel, [follow the steps 
    npm run dev
    ```
 
-   The starter kit should now be running on [localhost:8569](http://localhost:8569/).
+   The starter kit should now be running on [localhost:6958](http://localhost:6958/).
 
 6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
 

@@ -4,15 +4,15 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "8569:8569"
+      - "6958:6958"
     environment:
       - NODE_ENV=production
-      - PORT=8569
+      - PORT=6958
     volumes:
       # 挂载日志目录
       - ./logs/app:/app/logs
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8569/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6958/health"]
       interval: 30s
       timeout: 10s
       retries: 3

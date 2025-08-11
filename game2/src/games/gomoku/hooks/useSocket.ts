@@ -16,7 +16,7 @@ export const useSocket = () => {
       
       if (import.meta.env.DEV) {
         // 开发环境直接连接后端
-        serverUrl = 'http://localhost:8569'
+        serverUrl = 'http://localhost:6958'
       } else {
         // 生产环境走同源，通过 Nginx 反代到后端
         const protocol = window.location.protocol

@@ -22,13 +22,13 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/socket.io': {
-        target: 'http://localhost:8569',
+        target: 'http://localhost:6958',
         ws: true,
         changeOrigin: true,
         secure: false
       },
       '/api': {
-        target: 'http://localhost:8569',
+        target: 'http://localhost:6958',
         changeOrigin: true,
         secure: false
       }

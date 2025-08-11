@@ -381,7 +381,7 @@ setInterval(() => {
 }, 5 * 60 * 1000); // 每5分钟清理一次
 
 // 启动服务器
-const PORT = process.env.PORT || 8569;
+const PORT = process.env.PORT || 6958;
 server.listen(PORT, () => {
     console.log(`信令服务器运行在端口 ${PORT}`);
     console.log(`环境: ${process.env.NODE_ENV || 'development'}`);

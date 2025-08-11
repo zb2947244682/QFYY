@@ -1,9 +1,9 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack --port 8569",
+    "dev": "next dev --turbopack --port 6958",
     "build": "next build",
-    "start": "next start --port 8569",
+    "start": "next start --port 6958",
     "lint": "next lint"
   },
   "dependencies": {

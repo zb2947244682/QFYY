@@ -51,11 +51,11 @@ COPY --from=frontend-builder /app/dist ./dist
 RUN mkdir -p /app/logs
 
 # 暴露端口
-EXPOSE 8569
+EXPOSE 6958
 
 # 设置环境变量
 ENV NODE_ENV=production
-ENV PORT=8569
+ENV PORT=6958
 
 # 设置工作目录
 WORKDIR /app/server
