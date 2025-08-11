@@ -51,11 +51,11 @@ const GameBoard = () => {
       // 计算可用空间
       // 移动端使用更紧凑的布局
       const isMobile = vw < 640
-      const headerHeight = isMobile ? 60 : 120   // 头部导航高度（PC端减少）
-      const titleHeight = isMobile ? 40 : 60     // 标题区域高度（PC端减少）
-      const statusHeight = isMobile ? 60 : 70    // 状态栏高度（PC端减少）
-      const footerHeight = isMobile ? 100 : 80   // 底部按钮高度
-      const padding = isMobile ? 8 : 20          // 边距（PC端也减少）
+      const headerHeight = isMobile ? 60 : 100   // 头部导航高度（PC端进一步减少）
+      const titleHeight = isMobile ? 40 : 40     // 标题区域高度（PC端进一步减少）
+      const statusHeight = isMobile ? 60 : 60    // 状态栏高度（PC端进一步减少）
+      const footerHeight = isMobile ? 100 : 70   // 底部按钮高度（PC端进一步减少）
+      const padding = isMobile ? 8 : 20          // 边距
       const safeArea = isMobile ? 20 : 0         // 安全区域
       
       // 计算可用的宽度和高度

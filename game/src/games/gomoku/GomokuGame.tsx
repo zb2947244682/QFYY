@@ -453,18 +453,18 @@ const GomokuGame = () => {
               transition={{ duration: 0.3 }}
               className="w-full max-w-4xl px-2 sm:px-2"
             >
-              <div className="space-y-1 sm:space-y-2">
+              <div className="space-y-1 sm:space-y-1">
                 {/* 游戏标题 - 大幅压缩高度 */}
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-1 sm:py-1"
+                  className="text-center py-0.5"
                 >
-                  <h1 className="text-lg sm:text-3xl font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient">
+                  <h1 className="text-lg sm:text-2xl font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient">
                     五子棋对战
                   </h1>
-                  <p className="text-gray-300 mt-0.5 sm:mt-1 text-xs sm:text-sm">
-                    房间ID: <span className="text-yellow-400 font-pixel px-2 py-0.5 bg-yellow-400/10 rounded">{roomId}</span>
+                  <p className="text-gray-300 mt-0.5 text-[10px] sm:text-xs">
+                    房间ID: <span className="text-yellow-400 font-pixel px-1.5 py-0.5 bg-yellow-400/10 rounded">{roomId}</span>
                   </p>
                 </motion.div>
 
@@ -472,7 +472,7 @@ const GomokuGame = () => {
                 <GameStatus />
 
                 {/* 游戏棋盘 - 优化布局确保棋盘完整显示 */}
-                <div className="flex justify-center items-center w-full py-1 sm:py-1 -mx-2 sm:mx-0">
+                <div className="flex justify-center items-center w-full py-0.5 sm:py-1 -mx-2 sm:mx-0">
                   <GameBoard />
                 </div>
 

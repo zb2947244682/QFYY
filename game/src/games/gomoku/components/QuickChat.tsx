@@ -62,7 +62,7 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
         whileTap={{ scale: 0.95 }}
       >
         <span className="hidden sm:inline">💬 聊天</span>
-        <span className="sm:hidden">💬</span>
+        <span className="sm:hidden">聊天</span>
       </motion.button>
       
       {/* 快捷聊天面板 */}
