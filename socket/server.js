@@ -547,6 +547,20 @@ io.on('connection', (socket) => {
     });
     
     /**
+     * 聊天消息
+     */
+    socket.on('chat-message', (data) => {
+        const { roomId, message } = data;
+        console.log(`客户端 ${socket.id} 发送聊天消息: 房间 ${roomId}, 消息: ${message}`);
+        
+        // 转发给房间内的其他玩家
+        socket.to(roomId).emit('chat-message', {
+            message: message,
+            from: socket.id
+        });
+    });
+    
+    /**
      * 断开连接事件处理
      */
     socket.on('disconnect', () => {

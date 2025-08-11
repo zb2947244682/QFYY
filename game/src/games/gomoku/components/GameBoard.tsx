@@ -42,29 +42,32 @@ const GameBoard = () => {
       // 计算可用空间
       // 移动端使用更紧凑的布局
       const isMobile = vw < 640
-      const headerHeight = isMobile ? 60 : 160   // 头部导航高度（减少）
-      const titleHeight = isMobile ? 40 : 100    // 标题区域高度（减少）
-      const statusHeight = isMobile ? 60 : 80    // 状态栏高度（增加移动端高度，因为有比分）
-      const footerHeight = isMobile ? 50 : 100   // 底部按钮高度（减少）
-      const padding = isMobile ? 16 : 40          // 边距（调整）
-      const safeArea = isMobile ? 30 : 0         // 安全区域（增加）
+      const headerHeight = isMobile ? 60 : 160   // 头部导航高度
+      const titleHeight = isMobile ? 40 : 100    // 标题区域高度
+      const statusHeight = isMobile ? 60 : 80    // 状态栏高度
+      const footerHeight = isMobile ? 100 : 100  // 底部按钮高度（移动端增加快捷短语区）
+      const padding = isMobile ? 8 : 40          // 边距（移动端减少边距）
+      const safeArea = isMobile ? 20 : 0         // 安全区域
       
-      // 计算可用的宽度和高度 - 留出更多边距防止溢出
-      const availableWidth = vw - padding * 2 - 20  // 额外减去20px防止横向滚动
+      // 计算可用的宽度和高度
+      // 移动端使用几乎全部宽度
+      const availableWidth = isMobile ? vw - padding : vw - padding * 2 - 20
       const availableHeight = vh - headerHeight - titleHeight - statusHeight - footerHeight - padding * 2 - safeArea
       
       // 取较小值确保棋盘完整显示
       const maxSize = Math.min(availableWidth, availableHeight)
       
       // 设置尺寸限制
-      const minSize = isMobile ? 240 : 320  // 减小最小尺寸
-      const maxSizeLimit = isMobile ? 350 : 600  // 减小移动端最大尺寸
+      const minSize = isMobile ? vw - padding : 320  // 移动端使用屏幕宽度
+      const maxSizeLimit = isMobile ? vw - padding : 600  // 移动端不限制最大尺寸
       
       // 计算目标尺寸
-      const targetSize = Math.max(minSize, Math.min(maxSizeLimit, maxSize))
+      const targetSize = isMobile 
+        ? Math.min(vw - padding, availableHeight)  // 移动端优先使用屏幕宽度
+        : Math.max(minSize, Math.min(maxSizeLimit, maxSize))
       
       // 计算单元格大小
-      const newCellSize = Math.max(14, Math.floor(targetSize / boardSize))  // 减小最小单元格尺寸
+      const newCellSize = Math.floor(targetSize / boardSize)
       const newBoardSize = newCellSize * boardSize
       
       setCellSize(newCellSize)
@@ -582,7 +585,7 @@ const GameBoard = () => {
       className="inline-block"
     >
       <div 
-        className="relative pixel-container p-2 md:p-4 bg-gradient-to-br from-amber-900/20 to-amber-800/20"
+        className="relative pixel-container p-1 sm:p-4 bg-gradient-to-br from-amber-900/20 to-amber-800/20"
         onClick={handleClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -602,7 +605,7 @@ const GameBoard = () => {
           ref={hoverCanvasRef}
           width={boardPixelSize}
           height={boardPixelSize}
-          className="absolute top-2 left-2 md:top-4 md:left-4 pointer-events-none"
+          className="absolute top-1 left-1 sm:top-4 sm:left-4 pointer-events-none"
           style={{ imageRendering: 'auto' }}
         />
       </div>

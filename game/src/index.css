@@ -152,11 +152,40 @@
   @apply bg-purple-700;
 }
 
+/* 自定义滚动条类 */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #9333ea #1f2937;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-gray-800 rounded;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-purple-600 rounded;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-purple-700;
+}
+
 /* 移动端优化 */
 @media (max-width: 640px) {
   /* 防止水平滚动 */
-  body {
+  html, body {
     overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  /* 调整字体大小 */
+  .font-pixel {
+    font-size: 0.625rem;
   }
   
   /* 优化触摸目标大小 */

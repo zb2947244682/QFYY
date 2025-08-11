@@ -231,6 +231,14 @@ export const useSocket = () => {
     }
   }
 
+  // 发送聊天消息
+  const sendChatMessage = (roomId: string, message: string) => {
+    if (socketInstance) {
+      console.log('Sending chat message:', { roomId, message })
+      socketInstance.emit('chat-message', { roomId, message })
+    }
+  }
+
   return {
     socket: socketInstance,
     connected,
@@ -239,6 +247,7 @@ export const useSocket = () => {
     acceptRestart,
     requestUndo,
     acceptUndo,
-    surrender
+    surrender,
+    sendChatMessage
   }
 }

@@ -7,8 +7,17 @@ import GameStatus from './components/GameStatus'
 import NotificationManager from './components/NotificationManager'
 import GameOverModal from './components/GameOverModal'
 import ConfirmDialog from './components/ConfirmDialog'
+import QuickChat from './components/QuickChat'
+import ChatBubble from './components/ChatBubble'
 import { useGomokuStore } from './store/gameStore'
 import { useSocket } from './hooks/useSocket'
+
+interface ChatMessage {
+  id: string
+  content: string
+  isOpponent: boolean
+  timestamp: number
+}
 
 /**
  * 五子棋游戏主组件
@@ -22,6 +31,7 @@ const GomokuGame = () => {
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
   const [showUndoConfirm, setShowUndoConfirm] = useState(false)
   const [waitingForOpponentRestart, setWaitingForOpponentRestart] = useState(false)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   
   const { 
     gameState, 
@@ -43,7 +53,8 @@ const GomokuGame = () => {
     acceptRestart,
     requestUndo,
     acceptUndo,
-    surrender
+    surrender,
+    sendChatMessage
   } = useSocket()
 
   // 调试连接状态
@@ -90,6 +101,8 @@ const GomokuGame = () => {
       setWaitingForOpponentRestart(false)
       setPendingRestart(false)
       setShowRestartConfirm(false)
+      // 清空聊天消息
+      setChatMessages([])
     }
     
     const handlePlayerJoined = (data: { playerId: string }) => {
@@ -121,12 +134,24 @@ const GomokuGame = () => {
       addNotification('success', '🏳️ 对手认输，你赢了！')
     }
     
+    const handleChatMessage = (data: { message: string, from: string }) => {
+      console.log('Received chat message:', data)
+      const newMessage: ChatMessage = {
+        id: Math.random().toString(36).substr(2, 9),
+        content: data.message,
+        isOpponent: true,
+        timestamp: Date.now()
+      }
+      setChatMessages(prev => [...prev, newMessage])
+    }
+    
     socket.on('restart-request', handleRestartRequest)
     socket.on('undo-request', handleUndoRequest)
     socket.on('game-restart', handleGameRestart)
     socket.on('player-joined', handlePlayerJoined)
     socket.on('player-left', handlePlayerLeft)
     socket.on('opponent-surrender', handleOpponentSurrender)
+    socket.on('chat-message', handleChatMessage)
     
     return () => {
       socket.off('restart-request', handleRestartRequest)
@@ -135,8 +160,28 @@ const GomokuGame = () => {
       socket.off('player-joined', handlePlayerJoined)
       socket.off('player-left', handlePlayerLeft)
       socket.off('opponent-surrender', handleOpponentSurrender)
+      socket.off('chat-message', handleChatMessage)
     }
   }, [socket, roomId, acceptRestart, addNotification, gameState])
+
+  /**
+   * 处理发送聊天消息
+   */
+  const handleSendMessage = (message: string) => {
+    if (!roomId) return
+    
+    // 发送消息
+    sendChatMessage(roomId, message)
+    
+    // 添加到本地消息列表
+    const newMessage: ChatMessage = {
+      id: Math.random().toString(36).substr(2, 9),
+      content: message,
+      isOpponent: false,
+      timestamp: Date.now()
+    }
+    setChatMessages(prev => [...prev, newMessage])
+  }
 
   /**
    * 处理同意重新开始
@@ -191,6 +236,7 @@ const GomokuGame = () => {
     resetGame()
     setRoomInfo(null, false)
     setWaitingForOpponentRestart(false)
+    setChatMessages([])
     addNotification('info', '👋 已离开房间')
   }
 
@@ -294,6 +340,12 @@ const GomokuGame = () => {
         {/* 通知管理器 */}
         <NotificationManager />
         
+        {/* 聊天气泡 */}
+        {isInRoom && <ChatBubble messages={chatMessages} />}
+        
+        {/* 快捷聊天 */}
+        {isInRoom && <QuickChat onSendMessage={handleSendMessage} />}
+        
         {/* 游戏结束弹窗 */}
         <GameOverModal 
           isOpen={showGameOverModal}
@@ -343,7 +395,7 @@ const GomokuGame = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="w-full max-w-4xl px-2"
+              className="w-full max-w-4xl px-2 sm:px-2"
             >
               <div className="space-y-1 sm:space-y-4">
                 {/* 游戏标题 - 大幅压缩移动端高度 */}
@@ -364,12 +416,12 @@ const GomokuGame = () => {
                 <GameStatus />
 
                 {/* 游戏棋盘 - 优化布局确保棋盘完整显示 */}
-                <div className="flex justify-center items-center w-full py-1 sm:py-2">
+                <div className="flex justify-center items-center w-full py-1 sm:py-2 -mx-2 sm:mx-0">
                   <GameBoard />
                 </div>
 
                 {/* 控制按钮 - 增强功能 */}
-                <div className="flex flex-wrap justify-center gap-2 sm:gap-4 pt-1 sm:pt-4">
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-4 pt-1 sm:pt-4 pb-16 sm:pb-4">
                   <button
                     onClick={handleRestart}
                     disabled={pendingRestart || waitingForOpponentRestart}
