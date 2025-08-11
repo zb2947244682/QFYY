@@ -1,0 +1,19 @@
+services:
+  # 前端静态文件服务 - 本地开发版本
+  gomoku-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile.local  # 使用本地开发版本的Dockerfile
+    container_name: qfyy-game-local
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - NODE_ENV=development  # 设置为开发环境，自动连接localhost:9001
+    # 添加健康检查以确保服务正常启动
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
