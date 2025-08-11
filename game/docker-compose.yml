@@ -1,0 +1,23 @@
+services:
+  # Node.js应用服务
+  gomoku-app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8569:8569"
+    environment:
+      - NODE_ENV=production
+      - PORT=8569
+    volumes:
+      # 挂载日志目录
+      - ./logs/app:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8569/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  default:
+    driver: bridge

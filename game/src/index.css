@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+  }
+
+  body {
+    @apply bg-gray-900 text-white antialiased;
+  }
+}
+
+@layer components {
+  /* 像素风格按钮 */
+  .pixel-btn {
+    @apply relative inline-flex items-center justify-center px-6 py-3 font-pixel text-xs 
+           bg-gray-700 text-white border-2 border-white 
+           transition-all duration-100 cursor-pointer
+           hover:bg-white hover:text-gray-900 hover:translate-y-[-2px]
+           active:translate-y-0
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    line-height: 1;
+  }
+
+  /* 游戏卡片 */
+  .game-card {
+    @apply relative overflow-hidden rounded-lg bg-gray-800 
+           border-2 border-gray-700 transition-all duration-300
+           hover:border-primary-500 hover:shadow-game
+           hover:scale-105 cursor-pointer;
+  }
+
+  /* 霓虹光效果 */
+  .neon-text {
+    @apply font-game font-bold;
+    text-shadow: 
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 30px currentColor,
+      0 0 40px currentColor;
+  }
+
+  /* 像素容器 */
+  .pixel-container {
+    @apply bg-gray-800 border-4 border-gray-700;
+    box-shadow: 
+      0 0 0 2px #000,
+      0 0 0 4px #fff,
+      0 0 0 6px #000,
+      0 0 20px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@layer utilities {
+  /* 禁用文本选择 */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* 像素化图像 */
+  .pixelated {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+
+  /* 滚动条样式 */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-gray-800 border border-gray-700;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 border border-gray-700;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+}
+
+/* 移动端优化 */
+@media (max-width: 640px) {
+  /* 防止水平滚动 */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* 优化触摸目标大小 */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* 优化输入框在移动端的显示 */
+  input, textarea, select {
+    font-size: 16px; /* 防止iOS缩放 */
+  }
+  
+  /* 优化滚动条 */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    border-radius: 2px;
+  }
+  
+  /* 优化像素按钮在移动端的显示 */
+  .pixel-btn {
+    @apply px-3 py-2 text-xs;
+  }
+  
+  /* 优化游戏卡片在移动端的显示 */
+  .game-card {
+    @apply p-3;
+  }
+}
+
+/* 改进焦点样式 */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid #8B5CF6;
+  outline-offset: 2px;
+}
+
+/* 改进选择样式 */
+::selection {
+  background-color: #8B5CF6;
+  color: white;
+}
+
+/* 动画 */
+@keyframes pixelate {
+  0%, 100% {
+    filter: blur(0);
+  }
+  50% {
+    filter: blur(1px);
+  }
+}
+
+.pixelate-animation {
+  animation: pixelate 0.5s ease-in-out;
+}
