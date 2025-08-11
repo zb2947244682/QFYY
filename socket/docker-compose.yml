@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   socket-server:
     build:
@@ -8,16 +6,12 @@ services:
     container_name: qfyy-socket-server
     restart: unless-stopped
     ports:
-      - "9001:8253"
+      - "9001:9001"
     environment:
       - NODE_ENV=production
-      - PORT=8253
+      - PORT=9001
     networks:
       - socket_network
-  environment:
-      - NODE_ENV=production
-      - PORT=9001
-
     logging:
       driver: "json-file"
       options:
