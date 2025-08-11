@@ -391,9 +391,6 @@ const GomokuGame = () => {
         {/* 聊天气泡 */}
         {isInRoom && <ChatBubble messages={chatMessages} />}
         
-        {/* 快捷聊天 */}
-        {isInRoom && <QuickChat onSendMessage={handleSendMessage} />}
-        
         {/* 游戏结束弹窗 */}
         <GameOverModal 
           isOpen={showGameOverModal}
@@ -480,7 +477,7 @@ const GomokuGame = () => {
                 </div>
 
                 {/* 控制按钮 - 增强功能 */}
-                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 pt-1 sm:pt-2 pb-16 sm:pb-4">
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 pt-1 sm:pt-2 pb-4">
                   <button
                     onClick={handleRestart}
                     disabled={pendingRestart || waitingForOpponentRestart}
@@ -512,6 +509,9 @@ const GomokuGame = () => {
                       {pendingUndo ? '等待...' : '悔棋'}
                     </span>
                   </button>
+                  
+                  {/* 快捷聊天按钮 */}
+                  <QuickChat onSendMessage={handleSendMessage} />
                   
                   <button
                     onClick={handleSurrender}

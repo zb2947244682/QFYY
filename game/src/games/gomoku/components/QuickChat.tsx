@@ -5,9 +5,10 @@ import clsx from 'clsx'
 
 interface QuickChatProps {
   onSendMessage: (message: string) => void
+  className?: string
 }
 
-const QuickChat = ({ onSendMessage }: QuickChatProps) => {
+const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<'emoji' | 'phrase'>('emoji')
   const { gameState } = useGomokuStore()
@@ -49,18 +50,18 @@ const QuickChat = ({ onSendMessage }: QuickChatProps) => {
   if (gameState === 'waiting') return null
   
   return (
-    <div className="relative">
+    <div className="relative inline-block">
       {/* 快捷聊天按钮 */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          "pixel-btn bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 text-xs sm:text-sm",
-          "fixed bottom-4 left-4 z-40 shadow-lg"
+          "pixel-btn bg-purple-600 hover:bg-purple-700 text-white px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm",
+          className
         )}
-        whileHover={{ scale: 1.1 }}
+        whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        <span className="hidden sm:inline">💬 快捷聊天</span>
+        <span className="hidden sm:inline">💬 聊天</span>
         <span className="sm:hidden">💬</span>
       </motion.button>
       
@@ -79,14 +80,14 @@ const QuickChat = ({ onSendMessage }: QuickChatProps) => {
             
             {/* 聊天面板 */}
             <motion.div
-              initial={{ opacity: 0, y: 100 }}
+              initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 100 }}
+              exit={{ opacity: 0, y: -10 }}
               transition={{ type: 'spring', damping: 25, stiffness: 400 }}
               className={clsx(
-                "fixed bottom-16 left-4 right-4 sm:left-4 sm:right-auto z-50",
+                "absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50",
                 "pixel-container bg-gray-900 p-3 sm:p-4",
-                "max-w-sm sm:w-80"
+                "w-[280px] sm:w-[320px] max-h-[300px]"
               )}
             >
               {/* 标签切换 */}
@@ -146,6 +147,13 @@ const QuickChat = ({ onSendMessage }: QuickChatProps) => {
                     ))}
                   </div>
                 )}
+              </div>
+              
+              {/* 小三角 */}
+              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 
+                border-l-8 border-l-transparent 
+                border-r-8 border-r-transparent 
+                border-t-8 border-t-gray-900">
               </div>
             </motion.div>
           </>
