@@ -420,6 +420,81 @@ io.on('connection', (socket) => {
     });
     
     /**
+     * 请求重新开始游戏
+     */
+    socket.on('request-restart', (data) => {
+        const { roomId } = data;
+        console.log(`客户端 ${socket.id} 请求重新开始游戏: 房间 ${roomId}`);
+        
+        // 通知对手有重新开始请求
+        socket.to(roomId).emit('restart-request', {
+            from: socket.id
+        });
+    });
+    
+    /**
+     * 同意重新开始游戏
+     */
+    socket.on('accept-restart', (data) => {
+        const { roomId } = data;
+        console.log(`客户端 ${socket.id} 同意重新开始游戏: 房间 ${roomId}`);
+        
+        // 重置房间准备状态
+        const room = roomManager.getRoom(roomId);
+        if (room) {
+            room.readyPlayers = [];
+        }
+        
+        // 通知房间内所有玩家重新开始
+        io.to(roomId).emit('game-restart');
+    });
+    
+    /**
+     * 请求悔棋
+     */
+    socket.on('request-undo', (data) => {
+        const { roomId } = data;
+        console.log(`客户端 ${socket.id} 请求悔棋: 房间 ${roomId}`);
+        
+        // 通知对手有悔棋请求
+        socket.to(roomId).emit('undo-request', {
+            from: socket.id
+        });
+    });
+    
+    /**
+     * 同意悔棋
+     */
+    socket.on('accept-undo', (data) => {
+        const { roomId } = data;
+        console.log(`客户端 ${socket.id} 同意悔棋: 房间 ${roomId}`);
+        
+        // 通知房间内所有玩家悔棋
+        io.to(roomId).emit('undo-move');
+    });
+    
+    /**
+     * 认输
+     */
+    socket.on('surrender', (data) => {
+        const { roomId } = data;
+        console.log(`客户端 ${socket.id} 认输: 房间 ${roomId}`);
+        
+        // 获取房间信息，确定谁赢了
+        const room = roomManager.getRoom(roomId);
+        if (room) {
+            const opponentId = room.players.find(id => id !== socket.id);
+            if (opponentId) {
+                // 通知对手获胜
+                const winnerColor = room.players.indexOf(opponentId) === 0 ? 1 : 2;
+                socket.to(roomId).emit('opponent-surrender', {
+                    winner: winnerColor
+                });
+            }
+        }
+    });
+    
+    /**
      * 断开连接事件处理
      */
     socket.on('disconnect', () => {

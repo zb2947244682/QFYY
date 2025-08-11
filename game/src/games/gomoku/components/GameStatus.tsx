@@ -7,7 +7,9 @@ const GameStatus = () => {
     myColor, 
     currentPlayer, 
     gameState, 
-    winner 
+    winner,
+    score,
+    roundNumber
   } = useGomokuStore()
 
   // 调试日志
@@ -44,8 +46,22 @@ const GameStatus = () => {
       animate={{ opacity: 1, y: 0 }}
       className="bg-gray-800 rounded-lg p-2 sm:p-3"
     >
-      {/* 移动端：紧凑的单行布局 */}
+      {/* 移动端：紧凑的布局 */}
       <div className="block sm:hidden">
+        {/* 比分显示 */}
+        <div className="flex items-center justify-between mb-2 px-2">
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-black rounded-full"></div>
+            <span className="font-game text-xs text-white">{score.black}</span>
+          </div>
+          <div className="text-gray-500 text-xs">第{roundNumber}回合</div>
+          <div className="flex items-center gap-1">
+            <span className="font-game text-xs text-white">{score.white}</span>
+            <div className="w-3 h-3 bg-white rounded-full border border-gray-400"></div>
+          </div>
+        </div>
+        
+        {/* 游戏状态 */}
         <div className="flex items-center justify-between text-xs">
           {/* 我的棋子 */}
           <div className="flex items-center gap-1">
@@ -90,55 +106,74 @@ const GameStatus = () => {
         </div>
       </div>
 
-      {/* 桌面端：保持原有的三列布局 */}
-      <div className="hidden sm:grid grid-cols-3 gap-4">
-        {/* 我的颜色 */}
-        <div className="text-center">
-          <div className="text-sm text-gray-400 mb-1">你的棋子</div>
-          <div className="flex items-center justify-center gap-2">
-            <div 
-              className={clsx(
-                'w-6 h-6 rounded',
-                myColor === 1 ? 'bg-black' : myColor === 2 ? 'bg-white border-2 border-gray-400' : 'bg-gray-600'
+      {/* 桌面端：保持原有的布局加上比分 */}
+      <div className="hidden sm:block">
+        {/* 比分和回合 */}
+        <div className="flex items-center justify-between mb-3 px-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-black rounded-full"></div>
+              <span className="font-game text-xl text-white">{score.black}</span>
+            </div>
+            <div className="text-gray-500 text-lg">:</div>
+            <div className="flex items-center gap-2">
+              <span className="font-game text-xl text-white">{score.white}</span>
+              <div className="w-6 h-6 bg-white rounded-full border-2 border-gray-400"></div>
+            </div>
+          </div>
+          <div className="text-gray-400 font-game">第 {roundNumber} 回合</div>
+        </div>
+        
+        {/* 原有的三列布局 */}
+        <div className="grid grid-cols-3 gap-4">
+          {/* 我的颜色 */}
+          <div className="text-center">
+            <div className="text-sm text-gray-400 mb-1">你的棋子</div>
+            <div className="flex items-center justify-center gap-2">
+              <div 
+                className={clsx(
+                  'w-6 h-6 rounded',
+                  myColor === 1 ? 'bg-black' : myColor === 2 ? 'bg-white border-2 border-gray-400' : 'bg-gray-600'
+                )}
+              />
+              <span className="font-game text-lg">{myColorText}</span>
+            </div>
+          </div>
+
+          {/* 游戏状态 */}
+          <div className="text-center">
+            <div className="text-sm text-gray-400 mb-1">游戏状态</div>
+            <div className={clsx(
+              'font-game text-lg',
+              gameState === 'waiting' && 'text-yellow-400',
+              gameState === 'playing' && isMyTurn && 'text-green-400 animate-pulse',
+              gameState === 'playing' && !isMyTurn && 'text-blue-400',
+              gameState === 'finished' && winner === myColor && 'text-green-400',
+              gameState === 'finished' && winner !== myColor && 'text-red-400'
+            )}>
+              {statusText}
+            </div>
+          </div>
+
+          {/* 当前回合 */}
+          <div className="text-center">
+            <div className="text-sm text-gray-400 mb-1">当前回合</div>
+            <div className="flex items-center justify-center gap-2">
+              {gameState === 'playing' && (
+                <>
+                  <div 
+                    className={clsx(
+                      'w-6 h-6 rounded',
+                      currentPlayer === 1 ? 'bg-black' : 'bg-white border-2 border-gray-400'
+                    )}
+                  />
+                  <span className="font-game text-lg">{currentPlayerText}</span>
+                </>
               )}
-            />
-            <span className="font-game text-lg">{myColorText}</span>
-          </div>
-        </div>
-
-        {/* 游戏状态 */}
-        <div className="text-center">
-          <div className="text-sm text-gray-400 mb-1">游戏状态</div>
-          <div className={clsx(
-            'font-game text-lg',
-            gameState === 'waiting' && 'text-yellow-400',
-            gameState === 'playing' && isMyTurn && 'text-green-400 animate-pulse',
-            gameState === 'playing' && !isMyTurn && 'text-blue-400',
-            gameState === 'finished' && winner === myColor && 'text-green-400',
-            gameState === 'finished' && winner !== myColor && 'text-red-400'
-          )}>
-            {statusText}
-          </div>
-        </div>
-
-        {/* 当前回合 */}
-        <div className="text-center">
-          <div className="text-sm text-gray-400 mb-1">当前回合</div>
-          <div className="flex items-center justify-center gap-2">
-            {gameState === 'playing' && (
-              <>
-                <div 
-                  className={clsx(
-                    'w-6 h-6 rounded',
-                    currentPlayer === 1 ? 'bg-black' : 'bg-white border-2 border-gray-400'
-                  )}
-                />
-                <span className="font-game text-lg">{currentPlayerText}</span>
-              </>
-            )}
-            {gameState !== 'playing' && (
-              <span className="text-gray-500">-</span>
-            )}
+              {gameState !== 'playing' && (
+                <span className="text-gray-500">-</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

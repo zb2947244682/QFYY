@@ -17,7 +17,8 @@ const GameBoard = () => {
     currentPlayer,
     gameState,
     makeMove,
-    roomId
+    roomId,
+    winningLine
   } = useGomokuStore()
   
   const { sendMove } = useSocket()
@@ -163,7 +164,12 @@ const GameBoard = () => {
     if (lastMove) {
       highlightLastMove(ctx, lastMove.row, lastMove.col)
     }
-  }, [board, boardSize, lastMove, cellSize, boardPixelSize])
+    
+    // 绘制获胜连线动画
+    if (winningLine && winningLine.length > 0) {
+      drawWinningLine(ctx)
+    }
+  }, [board, boardSize, lastMove, cellSize, boardPixelSize, winningLine])
   
   /**
    * 绘制棋子
@@ -174,10 +180,13 @@ const GameBoard = () => {
     const y = row * cellSize + cellSize / 2
     const radius = Math.max(6, cellSize / 2 - 3)
     
+    // 检查是否是获胜连线中的棋子
+    const isWinningPiece = winningLine?.some(pos => pos.row === row && pos.col === col)
+    
     if (player === 1) {
       // 黑子 - 圆形带渐变
       const gradient = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius)
-      gradient.addColorStop(0, '#444444')
+      gradient.addColorStop(0, isWinningPiece ? '#666666' : '#444444')
       gradient.addColorStop(1, '#000000')
       
       ctx.beginPath()
@@ -186,14 +195,14 @@ const GameBoard = () => {
       ctx.fill()
       
       // 边框
-      ctx.strokeStyle = '#000000'
-      ctx.lineWidth = 1
+      ctx.strokeStyle = isWinningPiece ? '#FFD700' : '#000000'
+      ctx.lineWidth = isWinningPiece ? 3 : 1
       ctx.stroke()
     } else {
       // 白子 - 圆形带渐变
       const gradient = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius)
       gradient.addColorStop(0, '#FFFFFF')
-      gradient.addColorStop(1, '#E0E0E0')
+      gradient.addColorStop(1, isWinningPiece ? '#F0F0F0' : '#E0E0E0')
       
       ctx.beginPath()
       ctx.arc(x, y, radius, 0, Math.PI * 2)
@@ -201,8 +210,8 @@ const GameBoard = () => {
       ctx.fill()
       
       // 边框
-      ctx.strokeStyle = '#CCCCCC'
-      ctx.lineWidth = 1
+      ctx.strokeStyle = isWinningPiece ? '#FFD700' : '#CCCCCC'
+      ctx.lineWidth = isWinningPiece ? 3 : 1
       ctx.stroke()
     }
   }
@@ -218,6 +227,43 @@ const GameBoard = () => {
     ctx.strokeStyle = '#FF4444'
     ctx.lineWidth = Math.max(2, cellSize / 20)
     ctx.strokeRect(x - size/2, y - size/2, size, size)
+  }
+  
+  /**
+   * 绘制获胜连线
+   */
+  const drawWinningLine = (ctx: CanvasRenderingContext2D) => {
+    if (!winningLine || winningLine.length < 2) return
+    
+    // 计算连线的起点和终点
+    const startPos = winningLine[0]
+    const endPos = winningLine[winningLine.length - 1]
+    
+    const startX = startPos.col * cellSize + cellSize / 2
+    const startY = startPos.row * cellSize + cellSize / 2
+    const endX = endPos.col * cellSize + cellSize / 2
+    const endY = endPos.row * cellSize + cellSize / 2
+    
+    // 绘制连线
+    ctx.save()
+    ctx.strokeStyle = '#FFD700'
+    ctx.lineWidth = 4
+    ctx.lineCap = 'round'
+    ctx.shadowColor = '#FFD700'
+    ctx.shadowBlur = 10
+    
+    // 创建渐变
+    const gradient = ctx.createLinearGradient(startX, startY, endX, endY)
+    gradient.addColorStop(0, '#FFD700')
+    gradient.addColorStop(0.5, '#FFA500')
+    gradient.addColorStop(1, '#FFD700')
+    ctx.strokeStyle = gradient
+    
+    ctx.beginPath()
+    ctx.moveTo(startX, startY)
+    ctx.lineTo(endX, endY)
+    ctx.stroke()
+    ctx.restore()
   }
   
   /**

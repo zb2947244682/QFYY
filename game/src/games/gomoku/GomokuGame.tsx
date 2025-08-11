@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import clsx from 'clsx'
 import GameBoard from './components/GameBoard'
 import RoomManager from './components/RoomManager'
 import GameStatus from './components/GameStatus'
+import NotificationManager from './components/NotificationManager'
+import GameOverModal from './components/GameOverModal'
 import { useGomokuStore } from './store/gameStore'
 import { useSocket } from './hooks/useSocket'
 
@@ -12,17 +15,80 @@ import { useSocket } from './hooks/useSocket'
  */
 const GomokuGame = () => {
   const [isInRoom, setIsInRoom] = useState(false)
+  const [showGameOverModal, setShowGameOverModal] = useState(false)
+  const [pendingRestart, setPendingRestart] = useState(false)
+  const [pendingUndo, setPendingUndo] = useState(false)
+  
   const { 
     gameState, 
     roomId,
     resetGame,
-    setRoomInfo
+    setRoomInfo,
+    myColor,
+    currentPlayer,
+    canUndo,
+    winner,
+    addNotification
   } = useGomokuStore()
   
-  const { socket, connected } = useSocket()
+  const { 
+    socket, 
+    connected,
+    requestRestart,
+    acceptRestart,
+    requestUndo,
+    acceptUndo,
+    surrender
+  } = useSocket()
 
   // 调试连接状态
   console.log('GomokuGame - connected:', connected, 'isInRoom:', isInRoom)
+
+  // 监听游戏结束
+  useEffect(() => {
+    if (gameState === 'finished' && winner) {
+      setTimeout(() => {
+        setShowGameOverModal(true)
+      }, 1000) // 延迟显示，让玩家先看到连线动画
+    }
+  }, [gameState, winner])
+
+  // 监听重新开始请求
+  useEffect(() => {
+    if (!socket) return
+    
+    const handleRestartRequest = () => {
+      setPendingRestart(true)
+      addNotification('info', '对手请求重新开始游戏')
+      // 自动同意重新开始（可以改为弹窗确认）
+      setTimeout(() => {
+        if (roomId) {
+          acceptRestart(roomId)
+          setPendingRestart(false)
+        }
+      }, 1000)
+    }
+    
+    const handleUndoRequest = () => {
+      setPendingUndo(true)
+      addNotification('info', '对手请求悔棋')
+      // 自动同意悔棋（可以改为弹窗确认）
+      setTimeout(() => {
+        if (roomId) {
+          acceptUndo(roomId)
+          setPendingUndo(false)
+        }
+      }, 1000)
+    }
+    
+    socket.on('restart-request', handleRestartRequest)
+    socket.on('undo-request', handleUndoRequest)
+    
+    return () => {
+      socket.off('restart-request', handleRestartRequest)
+      socket.off('undo-request', handleUndoRequest)
+    }
+  }, [socket, roomId, acceptRestart, acceptUndo, addNotification])
 
   /**
    * 处理离开房间
@@ -42,13 +108,68 @@ const GomokuGame = () => {
   const handleRestart = () => {
     console.log('Restart requested')
     if (socket && roomId) {
-      // 发送重新开始请求
-      socket.emit('restart-game', { roomId })
+      if (gameState === 'finished') {
+        // 游戏结束后可以直接重新开始
+        requestRestart(roomId)
+        setShowGameOverModal(false)
+      } else {
+        // 游戏进行中需要对手同意
+        requestRestart(roomId)
+        addNotification('info', '已发送重新开始请求，等待对手确认...')
+      }
+    }
+  }
+
+  /**
+   * 处理悔棋
+   */
+  const handleUndo = () => {
+    if (!canUndo || currentPlayer !== myColor) {
+      addNotification('warning', '当前不能悔棋')
+      return
+    }
+    
+    if (socket && roomId) {
+      requestUndo(roomId)
+      addNotification('info', '已发送悔棋请求，等待对手确认...')
+    }
+  }
+
+  /**
+   * 处理认输
+   */
+  const handleSurrender = () => {
+    if (gameState !== 'playing') {
+      addNotification('warning', '游戏未在进行中')
+      return
+    }
+    
+    // 确认认输
+    const confirmSurrender = window.confirm('确定要认输吗？')
+    if (confirmSurrender && socket && roomId) {
+      surrender(roomId)
+      // 更新本地状态
+      useGomokuStore.setState({
+        gameState: 'finished',
+        winner: myColor === 1 ? 2 : 1
+      })
+      useGomokuStore.getState().updateScore(myColor === 1 ? 2 : 1)
+      addNotification('info', '你认输了')
     }
   }
 
   return (
     <div className="min-h-[calc(100vh-120px)] flex flex-col items-center justify-start p-1 sm:p-4">
+      {/* 通知管理器 */}
+      <NotificationManager />
+      
+      {/* 游戏结束弹窗 */}
+      <GameOverModal 
+        isOpen={showGameOverModal}
+        onRestart={handleRestart}
+        onClose={() => setShowGameOverModal(false)}
+      />
+      
       <AnimatePresence mode="wait">
         {!isInRoom ? (
           <motion.div
@@ -93,16 +214,53 @@ const GomokuGame = () => {
                 <GameBoard />
               </div>
 
-              {/* 控制按钮 - 紧凑布局 */}
-              <div className="flex justify-center gap-2 sm:gap-4 pt-1 sm:pt-4">
+              {/* 控制按钮 - 增强功能 */}
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-4 pt-1 sm:pt-4">
                 <button
                   onClick={handleRestart}
-                  disabled={gameState !== 'finished'}
-                  className="pixel-btn text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3"
+                  disabled={pendingRestart}
+                  className={clsx(
+                    "pixel-btn text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3",
+                    pendingRestart && "opacity-50 cursor-not-allowed"
+                  )}
                 >
-                  <span className="hidden sm:inline">重新开始</span>
-                  <span className="sm:hidden">重开</span>
+                  <span className="hidden sm:inline">
+                    {pendingRestart ? '等待确认...' : '重新开始'}
+                  </span>
+                  <span className="sm:hidden">
+                    {pendingRestart ? '等待...' : '重开'}
+                  </span>
                 </button>
+                
+                <button
+                  onClick={handleUndo}
+                  disabled={!canUndo || currentPlayer !== myColor || gameState !== 'playing' || pendingUndo}
+                  className={clsx(
+                    "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3",
+                    (!canUndo || currentPlayer !== myColor || gameState !== 'playing' || pendingUndo) && 
+                    "opacity-50 cursor-not-allowed hover:bg-blue-600"
+                  )}
+                >
+                  <span className="hidden sm:inline">
+                    {pendingUndo ? '等待确认...' : '悔棋'}
+                  </span>
+                  <span className="sm:hidden">
+                    {pendingUndo ? '等待...' : '悔棋'}
+                  </span>
+                </button>
+                
+                <button
+                  onClick={handleSurrender}
+                  disabled={gameState !== 'playing'}
+                  className={clsx(
+                    "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3",
+                    gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
+                  )}
+                >
+                  <span className="hidden sm:inline">认输</span>
+                  <span className="sm:hidden">认输</span>
+                </button>
+                
                 <button
                   onClick={handleLeaveRoom}
                   className="pixel-btn bg-red-600 hover:bg-red-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3"

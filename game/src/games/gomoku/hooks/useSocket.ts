@@ -7,7 +7,16 @@ let globalConnected = false
 
 export const useSocket = () => {
   const [connected, setConnected] = useState(globalConnected)
-  const { setGameState, setPlayerColor, initBoard } = useGomokuStore()
+  const { 
+    setGameState, 
+    setPlayerColor, 
+    initBoard,
+    addNotification,
+    nextRound,
+    undoMove,
+    setCanUndo,
+    setWinningLine
+  } = useGomokuStore()
 
   useEffect(() => {
     if (!socketInstance) {
@@ -45,6 +54,7 @@ export const useSocket = () => {
         console.log('Socket disconnected')
         globalConnected = false
         setConnected(false)
+        addNotification('warning', '与服务器断开连接')
       })
 
       socketInstance.on('connect_error', (error) => {
@@ -57,6 +67,7 @@ export const useSocket = () => {
         console.log('Socket reconnected after', attemptNumber, 'attempts')
         globalConnected = true
         setConnected(true)
+        addNotification('success', '重新连接成功')
       })
 
       socketInstance.on('reconnect_error', (error) => {
@@ -83,6 +94,7 @@ export const useSocket = () => {
       // 玩家加入
       socketInstance.on('player-joined', (data: { playerId: string }) => {
         console.log('Player joined room:', data.playerId)
+        addNotification('info', '对手已加入房间')
         // 当有玩家加入时，自动准备开始游戏
         if (socketInstance) {
           console.log('Auto-readying for game start...')
@@ -94,16 +106,19 @@ export const useSocket = () => {
       socketInstance.on('player-left', (data: { playerId: string }) => {
         console.log('Player left room:', data.playerId)
         setGameState('waiting')
+        addNotification('warning', '对手已离开房间')
       })
 
       // 房间创建成功
       socketInstance.on('room-created', (data: { roomId: string, isHost: boolean }) => {
         console.log('Room created:', data)
+        addNotification('success', `房间 ${data.roomId} 创建成功`)
       })
 
       // 房间加入成功
       socketInstance.on('room-joined', (data: { roomId: string, isHost: boolean }) => {
         console.log('Room joined:', data)
+        addNotification('success', `已加入房间 ${data.roomId}`)
         // 当加入房间时，自动准备开始游戏
         if (socketInstance) {
           console.log('Auto-readying for game start...')
@@ -114,6 +129,7 @@ export const useSocket = () => {
       // 房间错误
       socketInstance.on('room-error', (error: { message: string }) => {
         console.error('Room error:', error.message)
+        addNotification('error', error.message)
       })
 
       // 房间列表更新
@@ -129,23 +145,69 @@ export const useSocket = () => {
         const newBoard = store.board.map(r => [...r])
         newBoard[data.row][data.col] = store.currentPlayer
         
-        const isWin = store.checkWin(data.row, data.col, store.currentPlayer)
+        const winLine = store.checkWin(data.row, data.col, store.currentPlayer)
+        const isWin = winLine !== null
+        
+        // 添加到历史记录
+        store.addHistory(store.currentPlayer, { row: data.row, col: data.col })
         
         useGomokuStore.setState({
           board: newBoard,
           lastMove: { row: data.row, col: data.col },
           currentPlayer: store.currentPlayer === 1 ? 2 : 1,
           winner: isWin ? store.currentPlayer : null,
-          gameState: isWin ? 'finished' : 'playing'
+          winningLine: winLine,
+          gameState: isWin ? 'finished' : 'playing',
+          canUndo: true
         })
+        
+        // 如果对手获胜，更新比分
+        if (isWin) {
+          store.updateScore(store.currentPlayer)
+        }
+      })
+
+      // 重新开始游戏请求
+      socketInstance.on('restart-request', (data: { from: string }) => {
+        console.log('Restart request from:', data.from)
+        addNotification('info', '对手请求重新开始游戏')
+        // 这里可以弹出确认框让用户确认
       })
 
       // 重新开始游戏
       socketInstance.on('game-restart', () => {
-        console.log('Game restart requested')
-        // 重置游戏状态
-        initBoard()
+        console.log('Game restart')
+        nextRound()
         setGameState('playing')
+        addNotification('success', '游戏已重新开始')
+      })
+
+      // 悔棋请求
+      socketInstance.on('undo-request', (data: { from: string }) => {
+        console.log('Undo request from:', data.from)
+        addNotification('info', '对手请求悔棋')
+        // 这里可以弹出确认框让用户确认
+      })
+
+      // 悔棋
+      socketInstance.on('undo-move', () => {
+        console.log('Undo move')
+        undoMove()
+        addNotification('info', '已悔棋')
+      })
+
+      // 认输
+      socketInstance.on('opponent-surrender', (data: { winner: 1 | 2 }) => {
+        console.log('Opponent surrendered, winner:', data.winner)
+        const store = useGomokuStore.getState()
+        
+        useGomokuStore.setState({
+          gameState: 'finished',
+          winner: data.winner
+        })
+        
+        store.updateScore(data.winner)
+        addNotification('success', '对手认输，你赢了！')
       })
     } else {
       // 如果socket实例已存在，同步连接状态
@@ -155,7 +217,7 @@ export const useSocket = () => {
     return () => {
       // 不要在组件卸载时断开连接，保持全局连接
     }
-  }, [setGameState, setPlayerColor, initBoard])
+  }, [setGameState, setPlayerColor, initBoard, addNotification, nextRound, undoMove, setCanUndo, setWinningLine])
 
   // 发送落子信息的函数
   const sendMove = (roomId: string, row: number, col: number) => {
@@ -165,9 +227,54 @@ export const useSocket = () => {
     }
   }
 
+  // 请求重新开始
+  const requestRestart = (roomId: string) => {
+    if (socketInstance) {
+      console.log('Requesting restart:', roomId)
+      socketInstance.emit('request-restart', { roomId })
+    }
+  }
+
+  // 同意重新开始
+  const acceptRestart = (roomId: string) => {
+    if (socketInstance) {
+      console.log('Accepting restart:', roomId)
+      socketInstance.emit('accept-restart', { roomId })
+    }
+  }
+
+  // 请求悔棋
+  const requestUndo = (roomId: string) => {
+    if (socketInstance) {
+      console.log('Requesting undo:', roomId)
+      socketInstance.emit('request-undo', { roomId })
+    }
+  }
+
+  // 同意悔棋
+  const acceptUndo = (roomId: string) => {
+    if (socketInstance) {
+      console.log('Accepting undo:', roomId)
+      socketInstance.emit('accept-undo', { roomId })
+    }
+  }
+
+  // 认输
+  const surrender = (roomId: string) => {
+    if (socketInstance) {
+      console.log('Surrendering:', roomId)
+      socketInstance.emit('surrender', { roomId })
+    }
+  }
+
   return {
     socket: socketInstance,
     connected,
-    sendMove
+    sendMove,
+    requestRestart,
+    acceptRestart,
+    requestUndo,
+    acceptUndo,
+    surrender
   }
 }
