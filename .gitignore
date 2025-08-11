@@ -42,9 +42,12 @@ msbuild.wrn
 # Log file
 *.log
 
-# M3U8
-*.ts
+# M3U8 (HLS video segments)
 *.m3u8
+# Only ignore HLS video segment .ts files, not TypeScript files
+# Use more specific patterns if needed, e.g.:
+# video_segments/*.ts
+# hls_output/*.ts
 
 # BlueJ files
 *.ctxt
