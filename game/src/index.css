@@ -1,100 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-game: 'Press Start 2P', monospace;
+  --font-pixel: 'Press Start 2P', monospace;
+}
+
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-  }
-
   body {
-    @apply bg-gray-900 text-white antialiased;
+    @apply bg-gray-900 text-white;
+    font-family: system-ui, -apple-system, sans-serif;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
   }
 }
 
 @layer components {
+  .font-game {
+    font-family: var(--font-game);
+  }
+  
+  .font-pixel {
+    font-family: var(--font-pixel);
+  }
+  
+  /* 像素风格容器 */
+  .pixel-container {
+    @apply border-2 border-gray-700 rounded-lg shadow-lg;
+    background: linear-gradient(135deg, rgba(31, 41, 55, 0.9), rgba(17, 24, 39, 0.95));
+    backdrop-filter: blur(10px);
+  }
+  
   /* 像素风格按钮 */
   .pixel-btn {
-    @apply relative inline-flex items-center justify-center px-6 py-3 font-pixel text-xs 
-           bg-gray-700 text-white border-2 border-white 
-           transition-all duration-100 cursor-pointer
-           hover:bg-white hover:text-gray-900 hover:translate-y-[-2px]
-           active:translate-y-0
-           disabled:opacity-50 disabled:cursor-not-allowed;
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
-    line-height: 1;
+    @apply px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95;
+    font-family: var(--font-pixel);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, #9333ea, #7c3aed);
+    box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+    position: relative;
+    overflow: hidden;
   }
-
-  /* 游戏卡片 */
-  .game-card {
-    @apply relative overflow-hidden rounded-lg bg-gray-800 
-           border-2 border-gray-700 transition-all duration-300
-           hover:border-primary-500 hover:shadow-game
-           hover:scale-105 cursor-pointer;
+  
+  .pixel-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
   }
-
-  /* 霓虹光效果 */
-  .neon-text {
-    @apply font-game font-bold;
-    text-shadow: 
-      0 0 10px currentColor,
-      0 0 20px currentColor,
-      0 0 30px currentColor,
-      0 0 40px currentColor;
+  
+  .pixel-btn:hover::before {
+    left: 100%;
   }
-
-  /* 像素容器 */
-  .pixel-container {
-    @apply bg-gray-800 border-4 border-gray-700;
-    box-shadow: 
-      0 0 0 2px #000,
-      0 0 0 4px #fff,
-      0 0 0 6px #000,
-      0 0 20px rgba(0, 0, 0, 0.5);
+  
+  .pixel-btn:hover {
+    box-shadow: 0 6px 20px rgba(147, 51, 234, 0.6);
+    transform: translateY(-2px) scale(1.05);
   }
-}
-
-@layer utilities {
-  /* 禁用文本选择 */
-  .no-select {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+  
+  .pixel-btn:active {
+    transform: translateY(0) scale(0.98);
   }
-
+  
+  .pixel-btn:disabled {
+    @apply cursor-not-allowed;
+    filter: grayscale(0.5);
+    opacity: 0.6;
+  }
+  
+  .pixel-btn:disabled:hover {
+    transform: none;
+    box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+  }
+  
   /* 像素化图像 */
   .pixelated {
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
   }
+}
 
-  /* 滚动条样式 */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+@layer utilities {
+  /* 渐变动画 */
+  @keyframes gradient {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
   }
+  
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 3s ease infinite;
+  }
+  
+  /* 光晕效果 */
+  @keyframes glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(147, 51, 234, 0.8);
+    }
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+  
+  /* 浮动效果 */
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+}
 
-  .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-gray-800 border border-gray-700;
-  }
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
 
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-gray-600 border border-gray-700;
-  }
+::-webkit-scrollbar-track {
+  @apply bg-gray-800;
+}
 
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-500;
-  }
+::-webkit-scrollbar-thumb {
+  @apply bg-purple-600 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-purple-700;
 }
 
 /* 移动端优化 */

@@ -9,6 +9,7 @@ import { useSocket } from '../hooks/useSocket'
  */
 const GameBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const hoverCanvasRef = useRef<HTMLCanvasElement>(null)
   const { 
     board, 
     boardSize, 
@@ -26,6 +27,8 @@ const GameBoard = () => {
   // 动态尺寸（根据屏幕自适应）
   const [cellSize, setCellSize] = useState(40)
   const [boardPixelSize, setBoardPixelSize] = useState(40 * boardSize)
+  const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null)
+  const [animationFrame, setAnimationFrame] = useState(0)
 
   /**
    * 计算棋盘最佳尺寸
@@ -86,6 +89,14 @@ const GameBoard = () => {
     }
   }, [boardSize])
 
+  // 动画帧更新
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimationFrame((prev) => (prev + 1) % 360)
+    }, 50)
+    return () => clearInterval(interval)
+  }, [])
+
   /**
    * 绘制棋盘和棋子
    * 优化了高DPI屏幕显示效果
@@ -107,15 +118,37 @@ const GameBoard = () => {
     // 缩放坐标系到逻辑像素
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     
-    // 清空画布
-    ctx.fillStyle = '#DEB887' // 棋盘颜色
+    // 绘制棋盘背景 - 使用渐变色
+    const bgGradient = ctx.createLinearGradient(0, 0, boardPixelSize, boardPixelSize)
+    bgGradient.addColorStop(0, '#E8D4A8')  // 浅木色
+    bgGradient.addColorStop(0.5, '#D4A76A') // 中木色
+    bgGradient.addColorStop(1, '#C89F5C')   // 深木色
+    ctx.fillStyle = bgGradient
     ctx.fillRect(0, 0, boardPixelSize, boardPixelSize)
     
-    // 绘制网格线
-    ctx.strokeStyle = '#8B4513'
-    ctx.lineWidth = Math.max(1, cellSize / 30) // 根据棋盘大小调整线宽
+    // 添加木纹效果
+    ctx.globalAlpha = 0.1
+    for (let i = 0; i < boardPixelSize; i += 3) {
+      ctx.strokeStyle = '#8B4513'
+      ctx.lineWidth = 0.5
+      ctx.beginPath()
+      ctx.moveTo(0, i + Math.sin(i * 0.02) * 2)
+      ctx.lineTo(boardPixelSize, i + Math.sin(i * 0.02) * 2)
+      ctx.stroke()
+    }
+    ctx.globalAlpha = 1.0
+    
+    // 绘制网格线 - 添加阴影效果
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
+    ctx.shadowBlur = 2
+    ctx.shadowOffsetX = 1
+    ctx.shadowOffsetY = 1
     
     for (let i = 0; i <= boardSize; i++) {
+      const lineWidth = i === 0 || i === boardSize ? 2 : 1
+      ctx.strokeStyle = i === 0 || i === boardSize ? '#5D4037' : '#6D4C41'
+      ctx.lineWidth = lineWidth
+      
       // 垂直线
       ctx.beginPath()
       ctx.moveTo(i * cellSize, 0)
@@ -129,9 +162,13 @@ const GameBoard = () => {
       ctx.stroke()
     }
     
-    // 绘制星位（天元和其他星位）
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetX = 0
+    ctx.shadowOffsetY = 0
+    
+    // 绘制星位（天元和其他星位）- 增强视觉效果
     if (boardSize >= 9) {
-      ctx.fillStyle = '#8B4513'
       const starPoints = []
       
       if (boardSize === 9) {
@@ -148,9 +185,18 @@ const GameBoard = () => {
       starPoints.forEach(([row, col]) => {
         const x = col * cellSize + cellSize / 2
         const y = row * cellSize + cellSize / 2
-        const radius = Math.max(2, cellSize / 12)
+        const radius = Math.max(3, cellSize / 10)
+        
+        // 外圈
+        ctx.beginPath()
+        ctx.arc(x, y, radius + 1, 0, Math.PI * 2)
+        ctx.fillStyle = '#5D4037'
+        ctx.fill()
+        
+        // 内圈
         ctx.beginPath()
         ctx.arc(x, y, radius, 0, Math.PI * 2)
+        ctx.fillStyle = '#3E2723'
         ctx.fill()
       })
     }
@@ -173,11 +219,71 @@ const GameBoard = () => {
     if (winningLine && winningLine.length > 0) {
       drawWinningLine(ctx)
     }
-  }, [board, boardSize, lastMove, cellSize, boardPixelSize, winningLine])
+  }, [board, boardSize, lastMove, cellSize, boardPixelSize, winningLine, animationFrame])
+  
+  // 绘制悬停效果
+  useEffect(() => {
+    const canvas = hoverCanvasRef.current
+    if (!canvas) return
+    
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = Math.floor(boardPixelSize * dpr)
+    canvas.height = Math.floor(boardPixelSize * dpr)
+    canvas.style.width = `${boardPixelSize}px`
+    canvas.style.height = `${boardPixelSize}px`
+    
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    
+    // 清空画布
+    ctx.clearRect(0, 0, boardPixelSize, boardPixelSize)
+    
+    // 绘制悬停提示
+    if (hoverPos && gameState === 'playing' && currentPlayer === myColor) {
+      const { row, col } = hoverPos
+      if (board[row][col] === 0) {
+        const x = col * cellSize + cellSize / 2
+        const y = row * cellSize + cellSize / 2
+        const radius = Math.max(6, cellSize / 2 - 3)
+        
+        // 绘制半透明预览棋子
+        ctx.globalAlpha = 0.5
+        
+        if (myColor === 1) {
+          // 黑子预览
+          const gradient = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius)
+          gradient.addColorStop(0, '#666666')
+          gradient.addColorStop(1, '#000000')
+          ctx.fillStyle = gradient
+        } else {
+          // 白子预览
+          const gradient = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius)
+          gradient.addColorStop(0, '#FFFFFF')
+          gradient.addColorStop(1, '#E0E0E0')
+          ctx.fillStyle = gradient
+        }
+        
+        ctx.beginPath()
+        ctx.arc(x, y, radius, 0, Math.PI * 2)
+        ctx.fill()
+        
+        // 添加脉冲效果
+        const pulseRadius = radius + Math.sin(animationFrame * 0.1) * 3
+        ctx.strokeStyle = myColor === 1 ? '#000000' : '#FFFFFF'
+        ctx.lineWidth = 2
+        ctx.globalAlpha = 0.3 - Math.sin(animationFrame * 0.1) * 0.2
+        ctx.beginPath()
+        ctx.arc(x, y, pulseRadius, 0, Math.PI * 2)
+        ctx.stroke()
+        
+        ctx.globalAlpha = 1.0
+      }
+    }
+  }, [hoverPos, board, cellSize, boardPixelSize, gameState, currentPlayer, myColor, animationFrame])
   
   /**
-   * 绘制棋子
-   * 优化了棋子的视觉效果和大小适配
+   * 绘制棋子 - 增强视觉效果
    */
   const drawPiece = (ctx: CanvasRenderingContext2D, row: number, col: number, player: number) => {
     const x = col * cellSize + cellSize / 2
@@ -187,86 +293,203 @@ const GameBoard = () => {
     // 检查是否是获胜连线中的棋子
     const isWinningPiece = winningLine?.some(pos => pos.row === row && pos.col === col)
     
+    // 保存当前状态
+    ctx.save()
+    
+    // 添加棋子阴影
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'
+    ctx.shadowBlur = 4
+    ctx.shadowOffsetX = 2
+    ctx.shadowOffsetY = 2
+    
     if (player === 1) {
-      // 黑子 - 圆形带渐变
-      const gradient = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius)
-      gradient.addColorStop(0, isWinningPiece ? '#666666' : '#444444')
-      gradient.addColorStop(1, '#000000')
-      
+      // 黑子 - 多层渐变增强立体感
+      // 底层
       ctx.beginPath()
       ctx.arc(x, y, radius, 0, Math.PI * 2)
-      ctx.fillStyle = gradient
+      ctx.fillStyle = '#000000'
+      ctx.fill()
+      
+      // 中层渐变
+      const gradient1 = ctx.createRadialGradient(x, y, radius * 0.7, x, y, radius)
+      gradient1.addColorStop(0, '#2C2C2C')
+      gradient1.addColorStop(1, '#000000')
+      ctx.fillStyle = gradient1
+      ctx.fill()
+      
+      // 高光层
+      ctx.shadowColor = 'transparent'
+      const gradient2 = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius)
+      gradient2.addColorStop(0, 'rgba(255, 255, 255, 0.3)')
+      gradient2.addColorStop(0.3, 'rgba(255, 255, 255, 0.1)')
+      gradient2.addColorStop(1, 'transparent')
+      ctx.fillStyle = gradient2
       ctx.fill()
       
       // 边框
-      ctx.strokeStyle = isWinningPiece ? '#FFD700' : '#000000'
-      ctx.lineWidth = isWinningPiece ? 3 : 1
+      ctx.strokeStyle = isWinningPiece ? '#FFD700' : '#1a1a1a'
+      ctx.lineWidth = isWinningPiece ? 3 : 1.5
       ctx.stroke()
-    } else {
-      // 白子 - 圆形带渐变
-      const gradient = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius)
-      gradient.addColorStop(0, '#FFFFFF')
-      gradient.addColorStop(1, isWinningPiece ? '#F0F0F0' : '#E0E0E0')
       
+    } else {
+      // 白子 - 珍珠质感
+      // 底层
       ctx.beginPath()
       ctx.arc(x, y, radius, 0, Math.PI * 2)
-      ctx.fillStyle = gradient
+      ctx.fillStyle = '#F5F5F5'
+      ctx.fill()
+      
+      // 珍珠光泽渐变
+      const gradient1 = ctx.createRadialGradient(x - radius/4, y - radius/4, 0, x, y, radius)
+      gradient1.addColorStop(0, '#FFFFFF')
+      gradient1.addColorStop(0.3, '#FAFAFA')
+      gradient1.addColorStop(0.7, '#F0F0F0')
+      gradient1.addColorStop(1, '#E8E8E8')
+      ctx.fillStyle = gradient1
+      ctx.fill()
+      
+      // 彩虹光泽效果
+      ctx.shadowColor = 'transparent'
+      const gradient2 = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius * 0.8)
+      gradient2.addColorStop(0, 'rgba(200, 200, 255, 0.3)')
+      gradient2.addColorStop(0.5, 'rgba(255, 200, 200, 0.2)')
+      gradient2.addColorStop(1, 'transparent')
+      ctx.fillStyle = gradient2
       ctx.fill()
       
       // 边框
       ctx.strokeStyle = isWinningPiece ? '#FFD700' : '#CCCCCC'
-      ctx.lineWidth = isWinningPiece ? 3 : 1
+      ctx.lineWidth = isWinningPiece ? 3 : 2
       ctx.stroke()
     }
+    
+    // 获胜棋子的特殊效果
+    if (isWinningPiece) {
+      // 金色光晕
+      ctx.shadowColor = '#FFD700'
+      ctx.shadowBlur = 10
+      ctx.strokeStyle = '#FFD700'
+      ctx.lineWidth = 2
+      ctx.globalAlpha = 0.5 + Math.sin(animationFrame * 0.1) * 0.3
+      ctx.beginPath()
+      ctx.arc(x, y, radius + 4, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+    
+    ctx.restore()
   }
   
   /**
-   * 高亮最后落子位置
+   * 高亮最后落子位置 - 动画效果
    */
   const highlightLastMove = (ctx: CanvasRenderingContext2D, row: number, col: number) => {
     const x = col * cellSize + cellSize / 2
     const y = row * cellSize + cellSize / 2
     const size = Math.max(8, cellSize / 3)
     
-    ctx.strokeStyle = '#FF4444'
-    ctx.lineWidth = Math.max(2, cellSize / 20)
-    ctx.strokeRect(x - size/2, y - size/2, size, size)
+    ctx.save()
+    
+    // 呼吸灯效果
+    const alpha = 0.6 + Math.sin(animationFrame * 0.1) * 0.4
+    ctx.globalAlpha = alpha
+    
+    // 绘制四个角标记
+    ctx.strokeStyle = '#FF6B6B'
+    ctx.lineWidth = 3
+    ctx.lineCap = 'round'
+    
+    const cornerLength = size / 3
+    const offset = size / 2
+    
+    // 左上角
+    ctx.beginPath()
+    ctx.moveTo(x - offset, y - offset + cornerLength)
+    ctx.lineTo(x - offset, y - offset)
+    ctx.lineTo(x - offset + cornerLength, y - offset)
+    ctx.stroke()
+    
+    // 右上角
+    ctx.beginPath()
+    ctx.moveTo(x + offset - cornerLength, y - offset)
+    ctx.lineTo(x + offset, y - offset)
+    ctx.lineTo(x + offset, y - offset + cornerLength)
+    ctx.stroke()
+    
+    // 右下角
+    ctx.beginPath()
+    ctx.moveTo(x + offset, y + offset - cornerLength)
+    ctx.lineTo(x + offset, y + offset)
+    ctx.lineTo(x + offset - cornerLength, y + offset)
+    ctx.stroke()
+    
+    // 左下角
+    ctx.beginPath()
+    ctx.moveTo(x - offset + cornerLength, y + offset)
+    ctx.lineTo(x - offset, y + offset)
+    ctx.lineTo(x - offset, y + offset - cornerLength)
+    ctx.stroke()
+    
+    ctx.restore()
   }
   
   /**
-   * 绘制获胜连线
+   * 绘制获胜连线 - 动画效果
    */
   const drawWinningLine = (ctx: CanvasRenderingContext2D) => {
     if (!winningLine || winningLine.length < 2) return
     
-    // 计算连线的起点和终点
-    const startPos = winningLine[0]
-    const endPos = winningLine[winningLine.length - 1]
-    
-    const startX = startPos.col * cellSize + cellSize / 2
-    const startY = startPos.row * cellSize + cellSize / 2
-    const endX = endPos.col * cellSize + cellSize / 2
-    const endY = endPos.row * cellSize + cellSize / 2
-    
-    // 绘制连线
     ctx.save()
+    
+    // 绘制连线路径
     ctx.strokeStyle = '#FFD700'
     ctx.lineWidth = 4
     ctx.lineCap = 'round'
     ctx.shadowColor = '#FFD700'
-    ctx.shadowBlur = 10
-    
-    // 创建渐变
-    const gradient = ctx.createLinearGradient(startX, startY, endX, endY)
-    gradient.addColorStop(0, '#FFD700')
-    gradient.addColorStop(0.5, '#FFA500')
-    gradient.addColorStop(1, '#FFD700')
-    ctx.strokeStyle = gradient
+    ctx.shadowBlur = 20
+    ctx.setLineDash([10, 5])
+    ctx.lineDashOffset = -animationFrame * 0.5
     
     ctx.beginPath()
-    ctx.moveTo(startX, startY)
-    ctx.lineTo(endX, endY)
+    winningLine.forEach((pos, index) => {
+      const x = pos.col * cellSize + cellSize / 2
+      const y = pos.row * cellSize + cellSize / 2
+      
+      if (index === 0) {
+        ctx.moveTo(x, y)
+      } else {
+        ctx.lineTo(x, y)
+      }
+    })
     ctx.stroke()
+    
+    // 绘制粒子效果
+    ctx.setLineDash([])
+    winningLine.forEach((pos, index) => {
+      const x = pos.col * cellSize + cellSize / 2
+      const y = pos.row * cellSize + cellSize / 2
+      
+      // 星星效果
+      const starSize = 3 + Math.sin((animationFrame + index * 20) * 0.1) * 2
+      ctx.fillStyle = '#FFD700'
+      ctx.globalAlpha = 0.6 + Math.sin((animationFrame + index * 20) * 0.1) * 0.4
+      
+      // 绘制四角星
+      ctx.beginPath()
+      for (let i = 0; i < 8; i++) {
+        const angle = (i * Math.PI / 4) + animationFrame * 0.02
+        const r = i % 2 === 0 ? starSize : starSize / 2
+        const sx = x + Math.cos(angle) * r
+        const sy = y + Math.sin(angle) * r
+        if (i === 0) {
+          ctx.moveTo(sx, sy)
+        } else {
+          ctx.lineTo(sx, sy)
+        }
+      }
+      ctx.closePath()
+      ctx.fill()
+    })
+    
     ctx.restore()
   }
   
@@ -274,16 +497,15 @@ const GameBoard = () => {
    * 处理点击和触摸事件
    * 统一处理鼠标点击和触摸操作
    */
-  const handleClick = (event: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const handleClick = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (gameState !== 'playing') return
     if (currentPlayer !== myColor) return
     
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const container = event.currentTarget
+    const rect = container.getBoundingClientRect()
     
     event.preventDefault() // 防止触摸时的默认行为
     
-    const rect = canvas.getBoundingClientRect()
     let clientX: number, clientY: number
     
     // 处理触摸和鼠标事件
@@ -313,11 +535,9 @@ const GameBoard = () => {
   /**
    * 处理鼠标移动（仅在非触摸设备上显示光标提示）
    */
-  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     if (gameState !== 'playing' || currentPlayer !== myColor) {
-      if (canvasRef.current) {
-        canvasRef.current.style.cursor = 'not-allowed'
-      }
+      setHoverPos(null)
       return
     }
     
@@ -325,10 +545,8 @@ const GameBoard = () => {
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
     if (isTouchDevice) return
     
-    const canvas = canvasRef.current
-    if (!canvas) return
-    
-    const rect = canvas.getBoundingClientRect()
+    const container = event.currentTarget
+    const rect = container.getBoundingClientRect()
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
     
@@ -336,16 +554,23 @@ const GameBoard = () => {
     const row = Math.floor(y / cellSize)
     
     if (row >= 0 && row < boardSize && col >= 0 && col < boardSize && board[row][col] === 0) {
-      canvas.style.cursor = 'pointer'
+      setHoverPos({ row, col })
     } else {
-      canvas.style.cursor = 'not-allowed'
+      setHoverPos(null)
     }
+  }
+  
+  /**
+   * 处理鼠标离开
+   */
+  const handleMouseLeave = () => {
+    setHoverPos(null)
   }
   
   /**
    * 处理触摸开始事件
    */
-  const handleTouchStart = (event: React.TouchEvent<HTMLCanvasElement>) => {
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     handleClick(event)
   }
   
@@ -356,16 +581,29 @@ const GameBoard = () => {
       transition={{ duration: 0.3 }}
       className="inline-block"
     >
-      <div className="pixel-container p-2 md:p-4">
+      <div 
+        className="relative pixel-container p-2 md:p-4 bg-gradient-to-br from-amber-900/20 to-amber-800/20"
+        onClick={handleClick}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        style={{ cursor: gameState === 'playing' && currentPlayer === myColor ? 'pointer' : 'not-allowed' }}
+      >
+        {/* 主棋盘画布 */}
         <canvas
           ref={canvasRef}
           width={boardPixelSize}
           height={boardPixelSize}
-          onClick={handleClick}
-          onMouseMove={handleMouseMove}
-          onTouchStart={handleTouchStart}
-          className="pixelated block"
-          style={{ imageRendering: 'pixelated' }}
+          className="block"
+          style={{ imageRendering: 'auto' }}
+        />
+        {/* 悬停效果画布 */}
+        <canvas
+          ref={hoverCanvasRef}
+          width={boardPixelSize}
+          height={boardPixelSize}
+          className="absolute top-2 left-2 md:top-4 md:left-4 pointer-events-none"
+          style={{ imageRendering: 'auto' }}
         />
       </div>
     </motion.div>
