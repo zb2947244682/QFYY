@@ -137,15 +137,23 @@ const GomokuGame = () => {
     }
     
     const handleOpponentSurrender = (data: { winner: 1 | 2 }) => {
-      console.log('Opponent surrendered, winner:', data.winner)
-      // 更新游戏状态
+      console.log('Opponent surrendered, winner:', data.winner, 'myColor:', myColor)
+      // 确认winner应该是我的颜色
+      if (data.winner !== myColor) {
+        console.error('Winner color mismatch! Expected:', myColor, 'Got:', data.winner)
+      }
+      // 更新游戏状态 - winner应该是我的颜色
       useGomokuStore.setState({
         gameState: 'finished',
-        winner: data.winner
+        winner: data.winner  // 这应该等于myColor
       })
       // 更新比分
       useGomokuStore.getState().updateScore(data.winner)
       addNotification('success', '🏳️ 对手认输，你赢了！')
+      // 立即显示游戏结束弹窗
+      setTimeout(() => {
+        setShowGameOverModal(true)
+      }, 500)
     }
     
     const handleChatMessage = (data: { message: string, from: string }) => {
@@ -180,7 +188,7 @@ const GomokuGame = () => {
       socket.off('opponent-surrender', handleOpponentSurrender)
       socket.off('chat-message', handleChatMessage)
     }
-  }, [socket, roomId, acceptRestart, addNotification, gameState])
+  }, [socket, roomId, acceptRestart, addNotification, gameState, myColor])
 
   /**
    * 处理发送聊天消息
@@ -323,8 +331,8 @@ const GomokuGame = () => {
    * 确认认输
    */
   const handleConfirmSurrender = () => {
-    if (socket && roomId) {
-      surrender(roomId)
+    if (socket && roomId && myColor) {
+      surrender(roomId, myColor)
       // 更新本地状态
       const opponentColor = myColor === 1 ? 2 : 1
       useGomokuStore.setState({

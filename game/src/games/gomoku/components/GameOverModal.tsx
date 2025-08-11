@@ -13,8 +13,10 @@ interface GameOverModalProps {
 
 const GameOverModal = ({ isOpen, onRestart, onClose, waitingForOpponent = false }: GameOverModalProps) => {
   const { winner, myColor, score } = useGomokuStore()
-  
   const isWinner = winner === myColor
+  
+  // 调试日志
+  console.log('GameOverModal - winner:', winner, 'myColor:', myColor, 'isWinner:', isWinner)
   
   // 如果胜利，放烟花
   useEffect(() => {

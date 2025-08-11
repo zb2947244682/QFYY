@@ -526,21 +526,16 @@ io.on('connection', (socket) => {
      * 认输
      */
     socket.on('surrender', (data) => {
-        const { roomId } = data;
-        console.log(`客户端 ${socket.id} 认输: 房间 ${roomId}`);
+        const { roomId, surrenderColor } = data;
+        console.log(`客户端 ${socket.id} 认输: 房间 ${roomId}, 认输方颜色 ${surrenderColor}`);
         
-        // 获取房间信息，确定谁赢了
-        const room = roomManager.getRoom(roomId);
-        if (room) {
-            const opponentId = room.players.find(id => id !== socket.id);
-            if (opponentId) {
-                // 通知对手获胜
-                const winnerColor = room.players.indexOf(opponentId) === 0 ? 1 : 2;
-                socket.to(roomId).emit('opponent-surrender', {
-                    winner: winnerColor
-                });
-            }
-        }
+        // 计算赢家颜色（对方的颜色）
+        const winnerColor = surrenderColor === 1 ? 2 : 1;
+        
+        // 通知对手获胜
+        socket.to(roomId).emit('opponent-surrender', {
+            winner: winnerColor
+        });
     });
     
     /**

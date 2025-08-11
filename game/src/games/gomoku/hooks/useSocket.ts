@@ -224,10 +224,10 @@ export const useSocket = () => {
   }
 
   // 认输
-  const surrender = (roomId: string) => {
+  const surrender = (roomId: string, myColor: number) => {
     if (socketInstance) {
-      console.log('Surrendering:', roomId)
-      socketInstance.emit('surrender', { roomId })
+      console.log('Surrendering:', roomId, 'myColor:', myColor)
+      socketInstance.emit('surrender', { roomId, surrenderColor: myColor })
     }
   }
 
