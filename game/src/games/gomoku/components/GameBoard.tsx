@@ -40,28 +40,28 @@ const GameBoard = () => {
       // 移动端使用更紧凑的布局
       const isMobile = vw < 640
       const headerHeight = isMobile ? 60 : 160   // 头部导航高度（减少）
-      const titleHeight = isMobile ? 35 : 100    // 标题区域高度（减少）
-      const statusHeight = isMobile ? 25 : 80    // 状态栏高度（减少）
-      const footerHeight = isMobile ? 35 : 100   // 底部按钮高度（减少）
-      const padding = isMobile ? 8 : 40          // 边距（减少）
-      const safeArea = isMobile ? 20 : 0         // 安全区域
+      const titleHeight = isMobile ? 40 : 100    // 标题区域高度（减少）
+      const statusHeight = isMobile ? 60 : 80    // 状态栏高度（增加移动端高度，因为有比分）
+      const footerHeight = isMobile ? 50 : 100   // 底部按钮高度（减少）
+      const padding = isMobile ? 16 : 40          // 边距（调整）
+      const safeArea = isMobile ? 30 : 0         // 安全区域（增加）
       
-      // 计算可用的宽度和高度
-      const availableWidth = vw - padding * 2
+      // 计算可用的宽度和高度 - 留出更多边距防止溢出
+      const availableWidth = vw - padding * 2 - 20  // 额外减去20px防止横向滚动
       const availableHeight = vh - headerHeight - titleHeight - statusHeight - footerHeight - padding * 2 - safeArea
       
       // 取较小值确保棋盘完整显示
       const maxSize = Math.min(availableWidth, availableHeight)
       
       // 设置尺寸限制
-      const minSize = isMobile ? 260 : 320  // 最小尺寸
-      const maxSizeLimit = isMobile ? 380 : 600  // 最大尺寸
+      const minSize = isMobile ? 240 : 320  // 减小最小尺寸
+      const maxSizeLimit = isMobile ? 350 : 600  // 减小移动端最大尺寸
       
       // 计算目标尺寸
       const targetSize = Math.max(minSize, Math.min(maxSizeLimit, maxSize))
       
       // 计算单元格大小
-      const newCellSize = Math.max(16, Math.floor(targetSize / boardSize))
+      const newCellSize = Math.max(14, Math.floor(targetSize / boardSize))  // 减小最小单元格尺寸
       const newBoardSize = newCellSize * boardSize
       
       setCellSize(newCellSize)
@@ -79,7 +79,11 @@ const GameBoard = () => {
     
     recalcSize()
     window.addEventListener('resize', recalcSize)
-    return () => window.removeEventListener('resize', recalcSize)
+    window.addEventListener('orientationchange', recalcSize)  // 添加屏幕方向变化监听
+    return () => {
+      window.removeEventListener('resize', recalcSize)
+      window.removeEventListener('orientationchange', recalcSize)
+    }
   }, [boardSize])
 
   /**

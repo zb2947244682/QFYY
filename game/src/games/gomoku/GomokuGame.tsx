@@ -6,6 +6,7 @@ import RoomManager from './components/RoomManager'
 import GameStatus from './components/GameStatus'
 import NotificationManager from './components/NotificationManager'
 import GameOverModal from './components/GameOverModal'
+import ConfirmDialog from './components/ConfirmDialog'
 import { useGomokuStore } from './store/gameStore'
 import { useSocket } from './hooks/useSocket'
 
@@ -18,6 +19,8 @@ const GomokuGame = () => {
   const [showGameOverModal, setShowGameOverModal] = useState(false)
   const [pendingRestart, setPendingRestart] = useState(false)
   const [pendingUndo, setPendingUndo] = useState(false)
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false)
+  const [showUndoConfirm, setShowUndoConfirm] = useState(false)
   
   const { 
     gameState, 
@@ -28,7 +31,8 @@ const GomokuGame = () => {
     currentPlayer,
     canUndo,
     winner,
-    addNotification
+    addNotification,
+    history
   } = useGomokuStore()
   
   const { 
@@ -59,26 +63,12 @@ const GomokuGame = () => {
     
     const handleRestartRequest = () => {
       setPendingRestart(true)
-      addNotification('info', '对手请求重新开始游戏')
-      // 自动同意重新开始（可以改为弹窗确认）
-      setTimeout(() => {
-        if (roomId) {
-          acceptRestart(roomId)
-          setPendingRestart(false)
-        }
-      }, 1000)
+      setShowRestartConfirm(true)  // 显示确认对话框
     }
     
     const handleUndoRequest = () => {
       setPendingUndo(true)
-      addNotification('info', '对手请求悔棋')
-      // 自动同意悔棋（可以改为弹窗确认）
-      setTimeout(() => {
-        if (roomId) {
-          acceptUndo(roomId)
-          setPendingUndo(false)
-        }
-      }, 1000)
+      setShowUndoConfirm(true)  // 显示确认对话框
     }
     
     socket.on('restart-request', handleRestartRequest)
@@ -88,7 +78,47 @@ const GomokuGame = () => {
       socket.off('restart-request', handleRestartRequest)
       socket.off('undo-request', handleUndoRequest)
     }
-  }, [socket, roomId, acceptRestart, acceptUndo, addNotification])
+  }, [socket])
+
+  /**
+   * 处理同意重新开始
+   */
+  const handleAcceptRestart = () => {
+    if (roomId) {
+      acceptRestart(roomId)
+      setPendingRestart(false)
+      setShowRestartConfirm(false)
+    }
+  }
+
+  /**
+   * 处理拒绝重新开始
+   */
+  const handleRejectRestart = () => {
+    setPendingRestart(false)
+    setShowRestartConfirm(false)
+    addNotification('info', '已拒绝重新开始请求')
+  }
+
+  /**
+   * 处理同意悔棋
+   */
+  const handleAcceptUndo = () => {
+    if (roomId) {
+      acceptUndo(roomId)
+      setPendingUndo(false)
+      setShowUndoConfirm(false)
+    }
+  }
+
+  /**
+   * 处理拒绝悔棋
+   */
+  const handleRejectUndo = () => {
+    setPendingUndo(false)
+    setShowUndoConfirm(false)
+    addNotification('info', '已拒绝悔棋请求')
+  }
 
   /**
    * 处理离开房间
@@ -124,7 +154,8 @@ const GomokuGame = () => {
    * 处理悔棋
    */
   const handleUndo = () => {
-    if (!canUndo || currentPlayer !== myColor) {
+    // 检查是否可以悔棋
+    if (!canUndo || currentPlayer !== myColor || history.length < 2) {
       addNotification('warning', '当前不能悔棋')
       return
     }
@@ -158,8 +189,15 @@ const GomokuGame = () => {
     }
   }
 
+  // 判断悔棋按钮是否应该禁用
+  const isUndoDisabled = !canUndo || 
+                         currentPlayer !== myColor || 
+                         gameState !== 'playing' || 
+                         pendingUndo || 
+                         history.length < 2
+
   return (
-    <div className="min-h-[calc(100vh-120px)] flex flex-col items-center justify-start p-1 sm:p-4">
+    <div className="min-h-[calc(100vh-120px)] flex flex-col items-center justify-start p-1 sm:p-4 overflow-x-hidden">
       {/* 通知管理器 */}
       <NotificationManager />
       
@@ -170,6 +208,28 @@ const GomokuGame = () => {
         onClose={() => setShowGameOverModal(false)}
       />
       
+      {/* 重新开始确认对话框 */}
+      <ConfirmDialog
+        isOpen={showRestartConfirm}
+        title="重新开始请求"
+        message="对手请求重新开始游戏，是否同意？"
+        confirmText="同意"
+        cancelText="拒绝"
+        onConfirm={handleAcceptRestart}
+        onCancel={handleRejectRestart}
+      />
+      
+      {/* 悔棋确认对话框 */}
+      <ConfirmDialog
+        isOpen={showUndoConfirm}
+        title="悔棋请求"
+        message="对手请求悔棋，是否同意？"
+        confirmText="同意"
+        cancelText="拒绝"
+        onConfirm={handleAcceptUndo}
+        onCancel={handleRejectUndo}
+      />
+      
       <AnimatePresence mode="wait">
         {!isInRoom ? (
           <motion.div
@@ -178,7 +238,7 @@ const GomokuGame = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
-            className="w-full max-w-2xl"
+            className="w-full max-w-2xl px-2"
           >
             <RoomManager onJoinRoom={() => setIsInRoom(true)} />
           </motion.div>
@@ -189,7 +249,7 @@ const GomokuGame = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="w-full max-w-4xl"
+            className="w-full max-w-4xl px-2"
           >
             <div className="space-y-1 sm:space-y-4">
               {/* 游戏标题 - 大幅压缩移动端高度 */}
@@ -234,11 +294,10 @@ const GomokuGame = () => {
                 
                 <button
                   onClick={handleUndo}
-                  disabled={!canUndo || currentPlayer !== myColor || gameState !== 'playing' || pendingUndo}
+                  disabled={isUndoDisabled}
                   className={clsx(
                     "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3",
-                    (!canUndo || currentPlayer !== myColor || gameState !== 'playing' || pendingUndo) && 
-                    "opacity-50 cursor-not-allowed hover:bg-blue-600"
+                    isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
                   )}
                 >
                   <span className="hidden sm:inline">
