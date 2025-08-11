@@ -9,8 +9,12 @@ services:
       - ./logs:/var/log/nginx
     networks:
       - halo_network
+      - game_network
 
 networks:
   halo_network:
     external: true
     name: halo_halo_network
+  game_network:
+    external: true
+    name: game_default
