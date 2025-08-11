@@ -18,8 +18,8 @@ export const useSocket = () => {
         // 开发环境连接本地独立Socket服务
         serverUrl = 'http://localhost:9001'
       } else {
-        // 生产环境连接独立Socket服务域名
-        serverUrl = 'https://socket.qingfengyueying.xyz'
+        // 生产环境连接独立Socket服务域名（使用HTTP，因为服务器没有SSL证书）
+        serverUrl = 'http://socket.qingfengyueying.xyz'
       }
       
       console.log('Attempting to connect to:', serverUrl)
