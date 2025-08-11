@@ -30,6 +30,7 @@ const GomokuGame = () => {
   const [pendingUndo, setPendingUndo] = useState(false)
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
   const [showUndoConfirm, setShowUndoConfirm] = useState(false)
+  const [showSurrenderConfirm, setShowSurrenderConfirm] = useState(false)
   const [waitingForOpponentRestart, setWaitingForOpponentRestart] = useState(false)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   
@@ -51,8 +52,10 @@ const GomokuGame = () => {
     connected,
     requestRestart,
     acceptRestart,
+    rejectRestart,
     requestUndo,
     acceptUndo,
+    rejectUndo,
     surrender,
     sendChatMessage
   } = useSocket()
@@ -90,9 +93,20 @@ const GomokuGame = () => {
       }
     }
     
+    const handleRestartRejected = () => {
+      setWaitingForOpponentRestart(false)
+      setPendingRestart(false)
+      addNotification('warning', '❌ 对手拒绝了重新开始请求')
+    }
+    
     const handleUndoRequest = () => {
       setPendingUndo(true)
       setShowUndoConfirm(true)
+    }
+    
+    const handleUndoRejected = () => {
+      setPendingUndo(false)
+      addNotification('warning', '❌ 对手拒绝了悔棋请求')
     }
     
     const handleGameRestart = () => {
@@ -146,7 +160,9 @@ const GomokuGame = () => {
     }
     
     socket.on('restart-request', handleRestartRequest)
+    socket.on('restart-rejected', handleRestartRejected)
     socket.on('undo-request', handleUndoRequest)
+    socket.on('undo-rejected', handleUndoRejected)
     socket.on('game-restart', handleGameRestart)
     socket.on('player-joined', handlePlayerJoined)
     socket.on('player-left', handlePlayerLeft)
@@ -155,7 +171,9 @@ const GomokuGame = () => {
     
     return () => {
       socket.off('restart-request', handleRestartRequest)
+      socket.off('restart-rejected', handleRestartRejected)
       socket.off('undo-request', handleUndoRequest)
+      socket.off('undo-rejected', handleUndoRejected)
       socket.off('game-restart', handleGameRestart)
       socket.off('player-joined', handlePlayerJoined)
       socket.off('player-left', handlePlayerLeft)
@@ -199,6 +217,9 @@ const GomokuGame = () => {
    * 处理拒绝重新开始
    */
   const handleRejectRestart = () => {
+    if (roomId) {
+      rejectRestart(roomId)
+    }
     setPendingRestart(false)
     setShowRestartConfirm(false)
     addNotification('info', '❌ 已拒绝重新开始请求')
@@ -220,6 +241,9 @@ const GomokuGame = () => {
    * 处理拒绝悔棋
    */
   const handleRejectUndo = () => {
+    if (roomId) {
+      rejectUndo(roomId)
+    }
     setPendingUndo(false)
     setShowUndoConfirm(false)
     addNotification('info', '❌ 已拒绝悔棋请求')
@@ -291,18 +315,34 @@ const GomokuGame = () => {
       return
     }
     
-    // 确认认输
-    const confirmSurrender = window.confirm('确定要认输吗？')
-    if (confirmSurrender && socket && roomId) {
+    // 显示确认对话框
+    setShowSurrenderConfirm(true)
+  }
+  
+  /**
+   * 确认认输
+   */
+  const handleConfirmSurrender = () => {
+    if (socket && roomId) {
       surrender(roomId)
       // 更新本地状态
+      const opponentColor = myColor === 1 ? 2 : 1
       useGomokuStore.setState({
         gameState: 'finished',
-        winner: myColor === 1 ? 2 : 1
+        winner: opponentColor
       })
-      useGomokuStore.getState().updateScore(myColor === 1 ? 2 : 1)
-      addNotification('info', '🏳️ 你认输了')
+      useGomokuStore.getState().updateScore(opponentColor)
+      addNotification('info', '🏳️ 你认输了，再接再厉！')
     }
+    setShowSurrenderConfirm(false)
+  }
+  
+  /**
+   * 取消认输
+   */
+  const handleCancelSurrender = () => {
+    setShowSurrenderConfirm(false)
+    addNotification('info', '💪 继续加油！')
   }
 
   // 判断悔棋按钮是否应该禁用
@@ -376,6 +416,17 @@ const GomokuGame = () => {
           onCancel={handleRejectUndo}
         />
         
+        {/* 认输确认对话框 */}
+        <ConfirmDialog
+          isOpen={showSurrenderConfirm}
+          title="认输确认"
+          message="确定要认输吗？认输后游戏将结束。"
+          confirmText="认输"
+          cancelText="取消"
+          onConfirm={handleConfirmSurrender}
+          onCancel={handleCancelSurrender}
+        />
+
         <AnimatePresence mode="wait">
           {!isInRoom ? (
             <motion.div
@@ -397,18 +448,18 @@ const GomokuGame = () => {
               transition={{ duration: 0.3 }}
               className="w-full max-w-4xl px-2 sm:px-2"
             >
-              <div className="space-y-1 sm:space-y-4">
-                {/* 游戏标题 - 大幅压缩移动端高度 */}
+              <div className="space-y-1 sm:space-y-2">
+                {/* 游戏标题 - 大幅压缩高度 */}
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-1 sm:py-2"
+                  className="text-center py-1 sm:py-1"
                 >
-                  <h1 className="text-lg sm:text-4xl font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient">
+                  <h1 className="text-lg sm:text-3xl font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient">
                     五子棋对战
                   </h1>
-                  <p className="text-gray-300 mt-0.5 sm:mt-2 text-xs sm:text-base">
-                    房间ID: <span className="text-yellow-400 font-pixel px-2 py-1 bg-yellow-400/10 rounded">{roomId}</span>
+                  <p className="text-gray-300 mt-0.5 sm:mt-1 text-xs sm:text-sm">
+                    房间ID: <span className="text-yellow-400 font-pixel px-2 py-0.5 bg-yellow-400/10 rounded">{roomId}</span>
                   </p>
                 </motion.div>
 
@@ -416,17 +467,17 @@ const GomokuGame = () => {
                 <GameStatus />
 
                 {/* 游戏棋盘 - 优化布局确保棋盘完整显示 */}
-                <div className="flex justify-center items-center w-full py-1 sm:py-2 -mx-2 sm:mx-0">
+                <div className="flex justify-center items-center w-full py-1 sm:py-1 -mx-2 sm:mx-0">
                   <GameBoard />
                 </div>
 
                 {/* 控制按钮 - 增强功能 */}
-                <div className="flex flex-wrap justify-center gap-2 sm:gap-4 pt-1 sm:pt-4 pb-16 sm:pb-4">
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 pt-1 sm:pt-2 pb-16 sm:pb-4">
                   <button
                     onClick={handleRestart}
                     disabled={pendingRestart || waitingForOpponentRestart}
                     className={clsx(
-                      "pixel-btn text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3 transition-all",
+                      "pixel-btn text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 transition-all",
                       (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
                     )}
                   >
@@ -442,7 +493,7 @@ const GomokuGame = () => {
                     onClick={handleUndo}
                     disabled={isUndoDisabled}
                     className={clsx(
-                      "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3 transition-all",
+                      "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 transition-all",
                       isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
                     )}
                   >
@@ -458,7 +509,7 @@ const GomokuGame = () => {
                     onClick={handleSurrender}
                     disabled={gameState !== 'playing'}
                     className={clsx(
-                      "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3 transition-all",
+                      "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 transition-all",
                       gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
                     )}
                   >
@@ -468,7 +519,7 @@ const GomokuGame = () => {
                   
                   <button
                     onClick={handleLeaveRoom}
-                    className="pixel-btn bg-red-600 hover:bg-red-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3 transition-all"
+                    className="pixel-btn bg-red-600 hover:bg-red-700 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 transition-all"
                   >
                     <span className="hidden sm:inline">离开房间</span>
                     <span className="sm:hidden">离开</span>

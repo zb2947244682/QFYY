@@ -238,6 +238,22 @@ export const useSocket = () => {
       socketInstance.emit('chat-message', { roomId, message })
     }
   }
+  
+  // 拒绝重新开始
+  const rejectRestart = (roomId: string) => {
+    if (socketInstance) {
+      console.log('Rejecting restart:', roomId)
+      socketInstance.emit('reject-restart', { roomId })
+    }
+  }
+  
+  // 拒绝悔棋
+  const rejectUndo = (roomId: string) => {
+    if (socketInstance) {
+      console.log('Rejecting undo:', roomId)
+      socketInstance.emit('reject-undo', { roomId })
+    }
+  }
 
   return {
     socket: socketInstance,
@@ -245,8 +261,10 @@ export const useSocket = () => {
     sendMove,
     requestRestart,
     acceptRestart,
+    rejectRestart,
     requestUndo,
     acceptUndo,
+    rejectUndo,
     surrender,
     sendChatMessage
   }

@@ -42,24 +42,24 @@ const GameBoard = () => {
       // 计算可用空间
       // 移动端使用更紧凑的布局
       const isMobile = vw < 640
-      const headerHeight = isMobile ? 60 : 160   // 头部导航高度
-      const titleHeight = isMobile ? 40 : 100    // 标题区域高度
-      const statusHeight = isMobile ? 60 : 80    // 状态栏高度
-      const footerHeight = isMobile ? 100 : 100  // 底部按钮高度（移动端增加快捷短语区）
-      const padding = isMobile ? 8 : 40          // 边距（移动端减少边距）
+      const headerHeight = isMobile ? 60 : 120   // 头部导航高度（PC端减少）
+      const titleHeight = isMobile ? 40 : 60     // 标题区域高度（PC端减少）
+      const statusHeight = isMobile ? 60 : 70    // 状态栏高度（PC端减少）
+      const footerHeight = isMobile ? 100 : 80   // 底部按钮高度
+      const padding = isMobile ? 8 : 20          // 边距（PC端也减少）
       const safeArea = isMobile ? 20 : 0         // 安全区域
       
       // 计算可用的宽度和高度
       // 移动端使用几乎全部宽度
-      const availableWidth = isMobile ? vw - padding : vw - padding * 2 - 20
+      const availableWidth = isMobile ? vw - padding : vw - padding * 2
       const availableHeight = vh - headerHeight - titleHeight - statusHeight - footerHeight - padding * 2 - safeArea
       
       // 取较小值确保棋盘完整显示
       const maxSize = Math.min(availableWidth, availableHeight)
       
       // 设置尺寸限制
-      const minSize = isMobile ? vw - padding : 320  // 移动端使用屏幕宽度
-      const maxSizeLimit = isMobile ? vw - padding : 600  // 移动端不限制最大尺寸
+      const minSize = isMobile ? vw - padding : 400  // PC端最小尺寸增大
+      const maxSizeLimit = isMobile ? vw - padding : 800  // PC端最大尺寸增大到800
       
       // 计算目标尺寸
       const targetSize = isMobile 
