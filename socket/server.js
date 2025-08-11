@@ -126,6 +126,11 @@ class RoomManager {
             room.players = room.players.filter(id => id !== playerSocketId);
             room.readyPlayers = room.readyPlayers.filter(id => id !== playerSocketId);
             
+            // 清理重新开始请求
+            if (room.restartRequests) {
+                room.restartRequests = room.restartRequests.filter(id => id !== playerSocketId);
+            }
+            
             console.log(`玩家 ${playerSocketId} 离开房间 ${roomId}`);
             console.log(`房间 ${roomId} 剩余玩家:`, room.players);
             
@@ -426,10 +431,38 @@ io.on('connection', (socket) => {
         const { roomId } = data;
         console.log(`客户端 ${socket.id} 请求重新开始游戏: 房间 ${roomId}`);
         
-        // 通知对手有重新开始请求
-        socket.to(roomId).emit('restart-request', {
-            from: socket.id
-        });
+        const room = roomManager.getRoom(roomId);
+        if (!room) {
+            console.log(`房间 ${roomId} 不存在`);
+            return;
+        }
+        
+        // 记录请求重新开始的玩家
+        if (!room.restartRequests) {
+            room.restartRequests = [];
+        }
+        
+        if (!room.restartRequests.includes(socket.id)) {
+            room.restartRequests.push(socket.id);
+            console.log(`房间 ${roomId} 重新开始请求者:`, room.restartRequests);
+        }
+        
+        // 如果两个玩家都请求了重新开始
+        if (room.restartRequests.length === 2) {
+            console.log(`房间 ${roomId} 双方都同意重新开始`);
+            
+            // 清空请求列表
+            room.restartRequests = [];
+            room.readyPlayers = [];
+            
+            // 通知房间内所有玩家重新开始
+            io.to(roomId).emit('game-restart');
+        } else {
+            // 通知对手有重新开始请求
+            socket.to(roomId).emit('restart-request', {
+                from: socket.id
+            });
+        }
     });
     
     /**
@@ -439,14 +472,33 @@ io.on('connection', (socket) => {
         const { roomId } = data;
         console.log(`客户端 ${socket.id} 同意重新开始游戏: 房间 ${roomId}`);
         
-        // 重置房间准备状态
         const room = roomManager.getRoom(roomId);
-        if (room) {
-            room.readyPlayers = [];
+        if (!room) {
+            console.log(`房间 ${roomId} 不存在`);
+            return;
         }
         
-        // 通知房间内所有玩家重新开始
-        io.to(roomId).emit('game-restart');
+        // 记录同意重新开始的玩家
+        if (!room.restartRequests) {
+            room.restartRequests = [];
+        }
+        
+        if (!room.restartRequests.includes(socket.id)) {
+            room.restartRequests.push(socket.id);
+            console.log(`房间 ${roomId} 同意重新开始的玩家:`, room.restartRequests);
+        }
+        
+        // 如果两个玩家都同意了重新开始
+        if (room.restartRequests.length === 2) {
+            console.log(`房间 ${roomId} 双方都同意重新开始`);
+            
+            // 清空请求列表
+            room.restartRequests = [];
+            room.readyPlayers = [];
+            
+            // 通知房间内所有玩家重新开始
+            io.to(roomId).emit('game-restart');
+        }
     });
     
     /**

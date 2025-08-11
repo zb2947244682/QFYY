@@ -86,39 +86,29 @@ export const useSocket = () => {
         initBoard()
         // 再显式设置为 playing，避免被上面的重置覆盖
         setGameState('playing')
+        addNotification('success', '🎯 游戏开始！')
         
         console.log('After state update - gameState:', useGomokuStore.getState().gameState)
         console.log('After state update - myColor:', useGomokuStore.getState().myColor)
       })
 
-      // 玩家加入
-      socketInstance.on('player-joined', (data: { playerId: string }) => {
-        console.log('Player joined room:', data.playerId)
-        addNotification('info', '对手已加入房间')
-        // 当有玩家加入时，自动准备开始游戏
-        if (socketInstance) {
-          console.log('Auto-readying for game start...')
-          socketInstance.emit('ready-to-play')
-        }
-      })
-
-      // 玩家离开
-      socketInstance.on('player-left', (data: { playerId: string }) => {
-        console.log('Player left room:', data.playerId)
-        setGameState('waiting')
-        addNotification('warning', '对手已离开房间')
-      })
-
+      // 注意：以下事件已在GomokuGame组件中处理，这里不再重复处理
+      // - player-joined
+      // - player-left  
+      // - restart-request
+      // - undo-request
+      // - opponent-surrender
+      
       // 房间创建成功
       socketInstance.on('room-created', (data: { roomId: string, isHost: boolean }) => {
         console.log('Room created:', data)
-        addNotification('success', `房间 ${data.roomId} 创建成功`)
+        addNotification('success', `✅ 房间 ${data.roomId} 创建成功`)
       })
 
       // 房间加入成功
       socketInstance.on('room-joined', (data: { roomId: string, isHost: boolean }) => {
         console.log('Room joined:', data)
-        addNotification('success', `已加入房间 ${data.roomId}`)
+        addNotification('success', `✅ 已加入房间 ${data.roomId}`)
         // 当加入房间时，自动准备开始游戏
         if (socketInstance) {
           console.log('Auto-readying for game start...')
@@ -129,7 +119,7 @@ export const useSocket = () => {
       // 房间错误
       socketInstance.on('room-error', (error: { message: string }) => {
         console.error('Room error:', error.message)
-        addNotification('error', error.message)
+        addNotification('error', `❌ ${error.message}`)
       })
 
       // 房间列表更新
@@ -167,48 +157,22 @@ export const useSocket = () => {
         }
       })
 
-      // 重新开始游戏请求
-      socketInstance.on('restart-request', (data: { from: string }) => {
-        console.log('Restart request from:', data.from)
-        addNotification('info', '对手请求重新开始游戏')
-        // 这里可以弹出确认框让用户确认
-      })
-
-      // 重新开始游戏
+      // 游戏重新开始（双方都同意后的事件）
       socketInstance.on('game-restart', () => {
-        console.log('Game restart')
+        console.log('Game restart - both players agreed')
         nextRound()
         setGameState('playing')
-        addNotification('success', '游戏已重新开始')
+        addNotification('success', '🎮 游戏已重新开始')
       })
 
-      // 悔棋请求
-      socketInstance.on('undo-request', (data: { from: string }) => {
-        console.log('Undo request from:', data.from)
-        addNotification('info', '对手请求悔棋')
-        // 这里可以弹出确认框让用户确认
-      })
-
-      // 悔棋
+      // 悔棋（双方都同意后的事件）
       socketInstance.on('undo-move', () => {
-        console.log('Undo move')
+        console.log('Undo move - both players agreed')
         undoMove()
-        addNotification('info', '已悔棋')
+        addNotification('info', '↩️ 已悔棋')
       })
-
-      // 认输
-      socketInstance.on('opponent-surrender', (data: { winner: 1 | 2 }) => {
-        console.log('Opponent surrendered, winner:', data.winner)
-        const store = useGomokuStore.getState()
-        
-        useGomokuStore.setState({
-          gameState: 'finished',
-          winner: data.winner
-        })
-        
-        store.updateScore(data.winner)
-        addNotification('success', '对手认输，你赢了！')
-      })
+      
+      // 注意：opponent-surrender 事件已在GomokuGame组件中处理
     } else {
       // 如果socket实例已存在，同步连接状态
       setConnected(globalConnected)

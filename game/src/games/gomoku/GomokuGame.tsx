@@ -21,6 +21,7 @@ const GomokuGame = () => {
   const [pendingUndo, setPendingUndo] = useState(false)
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
   const [showUndoConfirm, setShowUndoConfirm] = useState(false)
+  const [waitingForOpponentRestart, setWaitingForOpponentRestart] = useState(false)
   
   const { 
     gameState, 
@@ -57,28 +58,85 @@ const GomokuGame = () => {
     }
   }, [gameState, winner])
 
-  // 监听重新开始请求
+  // 监听重新开始请求和其他游戏事件
   useEffect(() => {
     if (!socket) return
     
     const handleRestartRequest = () => {
-      setPendingRestart(true)
-      setShowRestartConfirm(true)  // 显示确认对话框
+      // 如果是游戏结束后的请求，显示等待状态
+      if (gameState === 'finished') {
+        setWaitingForOpponentRestart(false)
+        setShowGameOverModal(false)
+        // 自动同意重新开始
+        if (roomId) {
+          acceptRestart(roomId)
+        }
+        addNotification('info', '双方同意，游戏即将重新开始')
+      } else {
+        // 游戏进行中的重新开始请求，需要确认
+        setPendingRestart(true)
+        setShowRestartConfirm(true)
+      }
     }
     
     const handleUndoRequest = () => {
       setPendingUndo(true)
-      setShowUndoConfirm(true)  // 显示确认对话框
+      setShowUndoConfirm(true)
+    }
+    
+    const handleGameRestart = () => {
+      // 游戏重新开始
+      setShowGameOverModal(false)
+      setWaitingForOpponentRestart(false)
+      setPendingRestart(false)
+      setShowRestartConfirm(false)
+    }
+    
+    const handlePlayerJoined = (data: { playerId: string }) => {
+      console.log('Player joined room:', data.playerId)
+      addNotification('success', '🎮 对手已加入房间')
+      // 当有玩家加入时，自动准备开始游戏
+      if (socket) {
+        console.log('Auto-readying for game start...')
+        socket.emit('ready-to-play')
+      }
+    }
+    
+    const handlePlayerLeft = (data: { playerId: string }) => {
+      console.log('Player left room:', data.playerId)
+      // 设置游戏状态为等待
+      useGomokuStore.setState({ gameState: 'waiting' })
+      addNotification('warning', '⚠️ 对手已离开房间')
+    }
+    
+    const handleOpponentSurrender = (data: { winner: 1 | 2 }) => {
+      console.log('Opponent surrendered, winner:', data.winner)
+      // 更新游戏状态
+      useGomokuStore.setState({
+        gameState: 'finished',
+        winner: data.winner
+      })
+      // 更新比分
+      useGomokuStore.getState().updateScore(data.winner)
+      addNotification('success', '🏳️ 对手认输，你赢了！')
     }
     
     socket.on('restart-request', handleRestartRequest)
     socket.on('undo-request', handleUndoRequest)
+    socket.on('game-restart', handleGameRestart)
+    socket.on('player-joined', handlePlayerJoined)
+    socket.on('player-left', handlePlayerLeft)
+    socket.on('opponent-surrender', handleOpponentSurrender)
     
     return () => {
       socket.off('restart-request', handleRestartRequest)
       socket.off('undo-request', handleUndoRequest)
+      socket.off('game-restart', handleGameRestart)
+      socket.off('player-joined', handlePlayerJoined)
+      socket.off('player-left', handlePlayerLeft)
+      socket.off('opponent-surrender', handleOpponentSurrender)
     }
-  }, [socket])
+  }, [socket, roomId, acceptRestart, addNotification, gameState])
 
   /**
    * 处理同意重新开始
@@ -88,6 +146,7 @@ const GomokuGame = () => {
       acceptRestart(roomId)
       setPendingRestart(false)
       setShowRestartConfirm(false)
+      addNotification('success', '✅ 已同意重新开始')
     }
   }
 
@@ -97,7 +156,7 @@ const GomokuGame = () => {
   const handleRejectRestart = () => {
     setPendingRestart(false)
     setShowRestartConfirm(false)
-    addNotification('info', '已拒绝重新开始请求')
+    addNotification('info', '❌ 已拒绝重新开始请求')
   }
 
   /**
@@ -108,6 +167,7 @@ const GomokuGame = () => {
       acceptUndo(roomId)
       setPendingUndo(false)
       setShowUndoConfirm(false)
+      addNotification('success', '✅ 已同意悔棋')
     }
   }
 
@@ -117,7 +177,7 @@ const GomokuGame = () => {
   const handleRejectUndo = () => {
     setPendingUndo(false)
     setShowUndoConfirm(false)
-    addNotification('info', '已拒绝悔棋请求')
+    addNotification('info', '❌ 已拒绝悔棋请求')
   }
 
   /**
@@ -130,22 +190,32 @@ const GomokuGame = () => {
     setIsInRoom(false)
     resetGame()
     setRoomInfo(null, false)
+    setWaitingForOpponentRestart(false)
+    addNotification('info', '👋 已离开房间')
   }
 
   /**
    * 处理重新开始游戏
    */
   const handleRestart = () => {
-    console.log('Restart requested')
+    console.log('Restart requested, gameState:', gameState, 'waitingForOpponentRestart:', waitingForOpponentRestart)
+    
+    // 防止重复请求
+    if (waitingForOpponentRestart) {
+      addNotification('info', '⏳ 正在等待对手同意...')
+      return
+    }
+    
     if (socket && roomId) {
       if (gameState === 'finished') {
-        // 游戏结束后可以直接重新开始
+        // 游戏结束后的重新开始
+        setWaitingForOpponentRestart(true)
         requestRestart(roomId)
-        setShowGameOverModal(false)
+        addNotification('info', '⏳ 等待对手同意再来一局...')
       } else {
-        // 游戏进行中需要对手同意
+        // 游戏进行中的重新开始
         requestRestart(roomId)
-        addNotification('info', '已发送重新开始请求，等待对手确认...')
+        addNotification('info', '📨 已发送重新开始请求')
       }
     }
   }
@@ -156,13 +226,13 @@ const GomokuGame = () => {
   const handleUndo = () => {
     // 检查是否可以悔棋
     if (!canUndo || currentPlayer !== myColor || history.length < 2) {
-      addNotification('warning', '当前不能悔棋')
+      addNotification('warning', '⚠️ 当前不能悔棋')
       return
     }
     
     if (socket && roomId) {
       requestUndo(roomId)
-      addNotification('info', '已发送悔棋请求，等待对手确认...')
+      addNotification('info', '📨 已发送悔棋请求，等待对手确认...')
     }
   }
 
@@ -171,7 +241,7 @@ const GomokuGame = () => {
    */
   const handleSurrender = () => {
     if (gameState !== 'playing') {
-      addNotification('warning', '游戏未在进行中')
+      addNotification('warning', '⚠️ 游戏未在进行中')
       return
     }
     
@@ -185,7 +255,7 @@ const GomokuGame = () => {
         winner: myColor === 1 ? 2 : 1
       })
       useGomokuStore.getState().updateScore(myColor === 1 ? 2 : 1)
-      addNotification('info', '你认输了')
+      addNotification('info', '🏳️ 你认输了')
     }
   }
 
@@ -229,6 +299,7 @@ const GomokuGame = () => {
           isOpen={showGameOverModal}
           onRestart={handleRestart}
           onClose={() => setShowGameOverModal(false)}
+          waitingForOpponent={waitingForOpponentRestart}
         />
         
         {/* 重新开始确认对话框 */}
@@ -301,17 +372,17 @@ const GomokuGame = () => {
                 <div className="flex flex-wrap justify-center gap-2 sm:gap-4 pt-1 sm:pt-4">
                   <button
                     onClick={handleRestart}
-                    disabled={pendingRestart}
+                    disabled={pendingRestart || waitingForOpponentRestart}
                     className={clsx(
                       "pixel-btn text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-3 transition-all",
-                      pendingRestart && "opacity-50 cursor-not-allowed"
+                      (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
                     )}
                   >
                     <span className="hidden sm:inline">
-                      {pendingRestart ? '等待确认...' : '重新开始'}
+                      {waitingForOpponentRestart ? '等待对手...' : pendingRestart ? '等待确认...' : '重新开始'}
                     </span>
                     <span className="sm:hidden">
-                      {pendingRestart ? '等待...' : '重开'}
+                      {waitingForOpponentRestart || pendingRestart ? '等待...' : '重开'}
                     </span>
                   </button>
                   
