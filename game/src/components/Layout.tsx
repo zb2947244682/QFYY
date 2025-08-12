@@ -43,7 +43,7 @@ const Layout = () => {
       </div>
 
       {/* 头部导航 - 优化移动端布局 */}
-      <header className="relative z-10">
+      <header className="relative z-1">
         <nav className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
           <div className="flex justify-between items-center">
             <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
@@ -85,7 +85,7 @@ const Layout = () => {
       </header>
 
       {/* 主内容区域 - 优化移动端间距 */}
-      <main className="relative z-10 container mx-auto px-3 sm:px-4 py-1 sm:py-2">
+      <main className="relative z-1 container mx-auto px-3 sm:px-4 py-1 sm:py-2">
         <motion.div
           key={location.pathname}
           initial={{ opacity: 0, y: 20 }}
@@ -98,7 +98,7 @@ const Layout = () => {
       </main>
 
       {/* 页脚 - 移动端简化显示 */}
-      <footer className="relative z-10">
+      <footer className="relative z-1">
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
           <div className="text-center text-xs sm:text-sm text-gray-500 font-pixel">
             © 2024 Game Collection
