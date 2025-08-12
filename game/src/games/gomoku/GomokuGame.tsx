@@ -362,91 +362,68 @@ const GomokuGame = () => {
 
   return (
     <div className="relative">
-      {/* 动态背景 - 使用fixed定位 */}
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        {/* 动态光斑效果 */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-20 left-20 w-96 h-96 bg-purple-500 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
-        </div>
-        
-        {/* 网格背景 - 使用CSS渐变代替SVG */}
-        <div 
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `linear-gradient(rgba(156, 146, 172, 0.1) 2px, transparent 2px),
-                             linear-gradient(90deg, rgba(156, 146, 172, 0.1) 2px, transparent 2px)`,
-            backgroundSize: '50px 50px',
-            backgroundPosition: '-1px -1px'
-          }}
-        ></div>
-      </div>
+      {/* 通知管理器 */}
+      <NotificationManager />
       
-      {/* 主内容区 */}
-      <div className="relative z-10">
-        {/* 通知管理器 */}
-        <NotificationManager />
-        
-        {/* 聊天气泡 */}
-        {isInRoom && <ChatBubble messages={chatMessages} />}
-        
-        {/* 游戏结束弹窗 */}
-        <GameOverModal 
-          isOpen={showGameOverModal}
-          onRestart={handleRestart}
-          onClose={() => setShowGameOverModal(false)}
-          waitingForOpponent={waitingForOpponentRestart}
-        />
-        
-        {/* 重新开始确认对话框 */}
-        <ConfirmDialog
-          isOpen={showRestartConfirm}
-          title="重新开始请求"
-          message="对手请求重新开始游戏，是否同意？"
-          confirmText="同意"
-          cancelText="拒绝"
-          onConfirm={handleAcceptRestart}
-          onCancel={handleRejectRestart}
-        />
-        
-        {/* 悔棋确认对话框 */}
-        <ConfirmDialog
-          isOpen={showUndoConfirm}
-          title="悔棋请求"
-          message="对手请求悔棋，是否同意？"
-          confirmText="同意"
-          cancelText="拒绝"
-          onConfirm={handleAcceptUndo}
-          onCancel={handleRejectUndo}
-        />
-        
-        {/* 认输确认对话框 */}
-        <ConfirmDialog
-          isOpen={showSurrenderConfirm}
-          title="认输确认"
-          message="确定要认输吗？认输后游戏将结束。"
-          confirmText="认输"
-          cancelText="取消"
-          onConfirm={handleConfirmSurrender}
-          onCancel={handleCancelSurrender}
-        />
+      {/* 聊天气泡 */}
+      {isInRoom && <ChatBubble messages={chatMessages} />}
+      
+      {/* 游戏结束弹窗 */}
+      <GameOverModal 
+        isOpen={showGameOverModal}
+        onRestart={handleRestart}
+        onClose={() => setShowGameOverModal(false)}
+        waitingForOpponent={waitingForOpponentRestart}
+      />
+      
+      {/* 重新开始确认对话框 */}
+      <ConfirmDialog
+        isOpen={showRestartConfirm}
+        title="重新开始请求"
+        message="对手请求重新开始游戏，是否同意？"
+        confirmText="同意"
+        cancelText="拒绝"
+        onConfirm={handleAcceptRestart}
+        onCancel={handleRejectRestart}
+      />
+      
+      {/* 悔棋确认对话框 */}
+      <ConfirmDialog
+        isOpen={showUndoConfirm}
+        title="悔棋请求"
+        message="对手请求悔棋，是否同意？"
+        confirmText="同意"
+        cancelText="拒绝"
+        onConfirm={handleAcceptUndo}
+        onCancel={handleRejectUndo}
+      />
+      
+      {/* 认输确认对话框 */}
+      <ConfirmDialog
+        isOpen={showSurrenderConfirm}
+        title="认输确认"
+        message="确定要认输吗？认输后游戏将结束。"
+        confirmText="认输"
+        cancelText="取消"
+        onConfirm={handleConfirmSurrender}
+        onCancel={handleCancelSurrender}
+      />
 
-        <AnimatePresence mode="wait">
-          {!isInRoom ? (
-            <motion.div
-              key="room-manager"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
-              className="flex items-center justify-center px-4 py-2"
-            >
-              <div className="w-full max-w-2xl">
-                <RoomManager onJoinRoom={() => setIsInRoom(true)} />
-              </div>
-            </motion.div>
-          ) : (
+      <AnimatePresence mode="wait">
+        {!isInRoom ? (
+          <motion.div
+            key="room-manager"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center justify-center px-4 py-2"
+          >
+            <div className="w-full max-w-2xl">
+              <RoomManager onJoinRoom={() => setIsInRoom(true)} />
+            </div>
+          </motion.div>
+        ) : (
             <motion.div
               key="game"
               initial={{ opacity: 0, y: 20 }}
@@ -611,7 +588,6 @@ const GomokuGame = () => {
             <span className="animate-pulse">连接中...</span>
           </motion.div>
         )}
-      </div>
     </div>
   )
 }

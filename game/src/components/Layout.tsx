@@ -18,9 +18,9 @@ const Layout = () => {
   const isHomePage = location.pathname === '/'
 
   return (
-    <div className="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
       {/* 背景动画粒子效果 - 在移动端减少粒子数量以提升性能 */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         {[...Array(window.innerWidth < 768 ? 20 : 50)].map((_, i) => (
           <motion.div
             key={i}
