@@ -10,7 +10,7 @@ interface PlayerAvatarProps {
 
 const PlayerAvatar = ({ color, size = 'medium', isActive = false, className = '' }: PlayerAvatarProps) => {
   const sizeClasses = {
-    small: 'w-8 h-8 text-xs',
+    small: 'w-7 h-7 text-xs',
     medium: 'w-10 h-10 text-sm',
     large: 'w-12 h-12 text-base'
   }
@@ -42,12 +42,12 @@ const PlayerAvatar = ({ color, size = 'medium', isActive = false, className = ''
       animate={isActive ? { scale: [1, 1.1, 1] } : {}}
       transition={isActive ? { repeat: Infinity, duration: 2 } : {}}
     >
-      <span className="text-lg">{getAvatarEmoji(color)}</span>
+      <span className={size === 'small' ? 'text-sm' : 'text-lg'}>{getAvatarEmoji(color)}</span>
       
       {/* 活跃状态指示器 */}
       {isActive && (
         <motion.div
-          className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900"
+          className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-gray-900"
           animate={{ scale: [0.8, 1.2, 0.8] }}
           transition={{ repeat: Infinity, duration: 1.5 }}
         />
@@ -55,7 +55,8 @@ const PlayerAvatar = ({ color, size = 'medium', isActive = false, className = ''
       
       {/* 棋子颜色指示 */}
       <div className={clsx(
-        'absolute -top-1 -right-1 w-4 h-4 rounded-full shadow-md',
+        'absolute -top-1 -right-1 rounded-full shadow-md',
+        size === 'small' ? 'w-3 h-3' : 'w-4 h-4',
         color === 1 ? 'bg-gradient-to-br from-gray-700 to-black' :
         color === 2 ? 'bg-gradient-to-br from-white to-gray-300 border border-gray-400' :
         'hidden'

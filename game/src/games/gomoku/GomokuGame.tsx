@@ -361,7 +361,7 @@ const GomokuGame = () => {
                          history.length < 2
 
   return (
-    <div className="min-h-[calc(100vh-120px)] relative overflow-x-hidden">
+    <div className="min-h-screen relative overflow-hidden">
       {/* 动态背景 */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         {/* 动态光斑效果 */}
@@ -384,7 +384,7 @@ const GomokuGame = () => {
       </div>
       
       {/* 主内容区 */}
-      <div className="relative z-10 flex flex-col items-center justify-start p-1 sm:p-4">
+      <div className="relative z-10 h-screen flex flex-col">
         {/* 通知管理器 */}
         <NotificationManager />
         
@@ -440,9 +440,11 @@ const GomokuGame = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.3 }}
-              className="w-full max-w-2xl px-2"
+              className="flex-1 flex items-center justify-center px-4"
             >
-              <RoomManager onJoinRoom={() => setIsInRoom(true)} />
+              <div className="w-full max-w-2xl">
+                <RoomManager onJoinRoom={() => setIsInRoom(true)} />
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -451,86 +453,148 @@ const GomokuGame = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="w-full max-w-4xl px-2 sm:px-2"
+              className="flex-1 flex flex-col"
             >
-              <div className="space-y-1 sm:space-y-1">
-                {/* 游戏标题 - 大幅压缩高度 */}
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-0.5"
-                >
-                  <h1 className="text-lg sm:text-2xl font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient">
+              {/* PC端布局 - 利用两侧空间 */}
+              <div className="hidden sm:flex flex-1">
+                <div className="flex-1 flex flex-col">
+                  {/* 顶部标题栏 - 压缩高度 */}
+                  <div className="text-center py-2">
+                    <h1 className="text-2xl font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient">
+                      五子棋对战
+                    </h1>
+                    <p className="text-gray-300 text-xs mt-1">
+                      房间ID: <span className="text-yellow-400 font-pixel px-1.5 py-0.5 bg-yellow-400/10 rounded">{roomId}</span>
+                    </p>
+                  </div>
+                  
+                  {/* 主游戏区域 - 三栏布局 */}
+                  <div className="flex-1 flex items-center justify-center px-4">
+                    {/* 左侧信息栏 */}
+                    <div className="flex-1 max-w-xs flex flex-col items-center justify-center">
+                      <GameStatus side="left" />
+                    </div>
+                    
+                    {/* 中央棋盘 */}
+                    <div className="flex items-center justify-center">
+                      <GameBoard />
+                    </div>
+                    
+                    {/* 右侧信息栏 */}
+                    <div className="flex-1 max-w-xs flex flex-col items-center justify-center">
+                      <GameStatus side="right" />
+                    </div>
+                  </div>
+                  
+                  {/* 底部控制按钮 - 压缩高度 */}
+                  <div className="flex justify-center gap-3 py-3">
+                    <button
+                      onClick={handleRestart}
+                      disabled={pendingRestart || waitingForOpponentRestart}
+                      className={clsx(
+                        "pixel-btn text-sm px-3 py-2 transition-all",
+                        (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      {waitingForOpponentRestart ? '等待对手...' : pendingRestart ? '等待确认...' : '重新开始'}
+                    </button>
+                    
+                    <button
+                      onClick={handleUndo}
+                      disabled={isUndoDisabled}
+                      className={clsx(
+                        "pixel-btn bg-blue-600 hover:bg-blue-700 text-sm px-3 py-2 transition-all",
+                        isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
+                      )}
+                    >
+                      {pendingUndo ? '等待确认...' : '悔棋'}
+                    </button>
+                    
+                    <QuickChat onSendMessage={handleSendMessage} />
+                    
+                    <button
+                      onClick={handleSurrender}
+                      disabled={gameState !== 'playing'}
+                      className={clsx(
+                        "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-sm px-3 py-2 transition-all",
+                        gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
+                      )}
+                    >
+                      认输
+                    </button>
+                    
+                    <button
+                      onClick={handleLeaveRoom}
+                      className="pixel-btn bg-red-600 hover:bg-red-700 text-sm px-3 py-2 transition-all"
+                    >
+                      离开房间
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 移动端布局 - 保持原有紧凑布局 */}
+              <div className="sm:hidden flex-1 flex flex-col">
+                {/* 游戏标题 - 移动端更紧凑 */}
+                <div className="text-center py-0.5">
+                  <h1 className="text-base font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
                     五子棋对战
                   </h1>
-                  <p className="text-gray-300 mt-0.5 text-[10px] sm:text-xs">
-                    房间ID: <span className="text-yellow-400 font-pixel px-1.5 py-0.5 bg-yellow-400/10 rounded">{roomId}</span>
+                  <p className="text-gray-300 text-[9px]">
+                    房间: <span className="text-yellow-400 font-pixel">{roomId}</span>
                   </p>
-                </motion.div>
+                </div>
 
-                {/* 游戏状态栏 - 紧凑布局 */}
+                {/* 游戏状态栏 */}
                 <GameStatus />
 
-                {/* 游戏棋盘 - 优化布局确保棋盘完整显示 */}
-                <div className="flex justify-center items-center w-full py-0.5 sm:py-1 -mx-2 sm:mx-0">
+                {/* 游戏棋盘 - 移动端居中 */}
+                <div className="flex-1 flex items-center justify-center">
                   <GameBoard />
                 </div>
 
-                {/* 控制按钮 - 增强功能 */}
-                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 pt-1 sm:pt-2 pb-4">
+                {/* 控制按钮 - 移动端紧凑 */}
+                <div className="flex flex-wrap justify-center gap-1.5 py-1.5">
                   <button
                     onClick={handleRestart}
                     disabled={pendingRestart || waitingForOpponentRestart}
                     className={clsx(
-                      "pixel-btn text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 transition-all",
+                      "pixel-btn text-[10px] px-2 py-1 transition-all",
                       (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
                     )}
                   >
-                    <span className="hidden sm:inline">
-                      {waitingForOpponentRestart ? '等待对手...' : pendingRestart ? '等待确认...' : '重新开始'}
-                    </span>
-                    <span className="sm:hidden">
-                      {waitingForOpponentRestart || pendingRestart ? '等待...' : '重开'}
-                    </span>
+                    {waitingForOpponentRestart || pendingRestart ? '等待...' : '重开'}
                   </button>
                   
                   <button
                     onClick={handleUndo}
                     disabled={isUndoDisabled}
                     className={clsx(
-                      "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 transition-all",
+                      "pixel-btn bg-blue-600 hover:bg-blue-700 text-[10px] px-2 py-1 transition-all",
                       isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
                     )}
                   >
-                    <span className="hidden sm:inline">
-                      {pendingUndo ? '等待确认...' : '悔棋'}
-                    </span>
-                    <span className="sm:hidden">
-                      {pendingUndo ? '等待...' : '悔棋'}
-                    </span>
+                    {pendingUndo ? '等待...' : '悔棋'}
                   </button>
                   
-                  {/* 快捷聊天按钮 */}
-                  <QuickChat onSendMessage={handleSendMessage} />
+                  <QuickChat onSendMessage={handleSendMessage} className="text-[10px] px-2 py-1" />
                   
                   <button
                     onClick={handleSurrender}
                     disabled={gameState !== 'playing'}
                     className={clsx(
-                      "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 transition-all",
+                      "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-[10px] px-2 py-1 transition-all",
                       gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
                     )}
                   >
-                    <span className="hidden sm:inline">认输</span>
-                    <span className="sm:hidden">认输</span>
+                    认输
                   </button>
                   
                   <button
                     onClick={handleLeaveRoom}
-                    className="pixel-btn bg-red-600 hover:bg-red-700 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 transition-all"
+                    className="pixel-btn bg-red-600 hover:bg-red-700 text-[10px] px-2 py-1 transition-all"
                   >
-                    <span className="hidden sm:inline">离开房间</span>
-                    <span className="sm:hidden">离开</span>
+                    离开
                   </button>
                 </div>
               </div>
@@ -538,7 +602,7 @@ const GomokuGame = () => {
           )}
         </AnimatePresence>
 
-        {/* 连接状态提示 - 优化移动端位置 */}
+        {/* 连接状态提示 */}
         {!connected && isInRoom && (
           <motion.div
             initial={{ opacity: 0 }}

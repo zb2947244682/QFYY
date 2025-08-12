@@ -51,47 +51,71 @@ const GameBoard = () => {
       // 计算可用空间
       // 移动端使用更紧凑的布局
       const isMobile = vw < 640
-      const headerHeight = isMobile ? 60 : 100   // 头部导航高度（PC端进一步减少）
-      const titleHeight = isMobile ? 40 : 40     // 标题区域高度（PC端进一步减少）
-      const statusHeight = isMobile ? 60 : 60    // 状态栏高度（PC端进一步减少）
-      const footerHeight = isMobile ? 100 : 70   // 底部按钮高度（PC端进一步减少）
-      const padding = isMobile ? 8 : 20          // 边距
-      const safeArea = isMobile ? 20 : 0         // 安全区域
       
-      // 计算可用的宽度和高度
-      // 移动端使用几乎全部宽度
-      const availableWidth = isMobile ? vw - padding : vw - padding * 2
-      const availableHeight = vh - headerHeight - titleHeight - statusHeight - footerHeight - padding * 2 - safeArea
-      
-      // 取较小值确保棋盘完整显示
-      const maxSize = Math.min(availableWidth, availableHeight)
-      
-      // 设置尺寸限制
-      const minSize = isMobile ? vw - padding : 400  // PC端最小尺寸增大
-      const maxSizeLimit = isMobile ? vw - padding : 800  // PC端最大尺寸增大到800
-      
-      // 计算目标尺寸
-      const targetSize = isMobile 
-        ? Math.min(vw - padding, availableHeight)  // 移动端优先使用屏幕宽度
-        : Math.max(minSize, Math.min(maxSizeLimit, maxSize))
-      
-      // 计算单元格大小
-      const newCellSize = Math.floor(targetSize / boardSize)
-      const newBoardSize = newCellSize * boardSize
-      
-      setCellSize(newCellSize)
-      setBoardPixelSize(newBoardSize)
-      setCanvasScale(dpr)
-      
-      console.log('Board size calculation:', {
-        viewport: { width: vw, height: vh },
-        available: { width: availableWidth, height: availableHeight },
-        target: targetSize,
-        cell: newCellSize,
-        board: newBoardSize,
-        dpr,
-        isMobile
-      })
+      if (isMobile) {
+        // 移动端：确保棋盘居中且适配小屏幕（最小375x667）
+        const headerHeight = 35  // 顶部标题高度（减小）
+        const statusHeight = 40  // 状态栏高度（减小）
+        const buttonHeight = 50  // 底部按钮高度（减小）
+        const padding = 12       // 边距（减小）
+        
+        // 计算可用的宽度和高度
+        const availableWidth = vw - padding * 2
+        const availableHeight = vh - headerHeight - statusHeight - buttonHeight - padding * 2
+        
+        // 取较小值确保棋盘完整显示
+        const maxSize = Math.min(availableWidth, availableHeight)
+        
+        // 移动端最小375x667，确保棋盘能完整显示
+        // 对于非常小的屏幕，进一步缩小棋盘
+        const targetSize = Math.min(maxSize, vw - padding * 2)
+        
+        // 计算单元格大小
+        const newCellSize = Math.floor(targetSize / boardSize)
+        const newBoardSize = newCellSize * boardSize
+        
+        setCellSize(newCellSize)
+        setBoardPixelSize(newBoardSize)
+        setCanvasScale(dpr)
+        
+        console.log('Mobile board size:', {
+          viewport: { width: vw, height: vh },
+          available: { width: availableWidth, height: availableHeight },
+          target: targetSize,
+          cell: newCellSize,
+          board: newBoardSize
+        })
+      } else {
+        // PC端：适配720P及以上分辨率
+        const headerHeight = 50   // 顶部标题高度
+        const buttonHeight = 60   // 底部按钮高度
+        const padding = 40        // 边距
+        
+        // 计算可用的高度（确保在720P下完整显示）
+        const availableHeight = vh - headerHeight - buttonHeight - padding * 2
+        
+        // PC端棋盘尺寸限制
+        const maxSize = Math.min(600, availableHeight)  // 最大600px，或可用高度
+        
+        // 根据高度计算合适的棋盘尺寸
+        const targetSize = Math.min(maxSize, availableHeight)
+        
+        // 计算单元格大小
+        const newCellSize = Math.floor(targetSize / boardSize)
+        const newBoardSize = newCellSize * boardSize
+        
+        setCellSize(newCellSize)
+        setBoardPixelSize(newBoardSize)
+        setCanvasScale(dpr)
+        
+        console.log('PC board size:', {
+          viewport: { width: vw, height: vh },
+          availableHeight,
+          target: targetSize,
+          cell: newCellSize,
+          board: newBoardSize
+        })
+      }
     }
     
     recalcSize()
@@ -620,7 +644,7 @@ const GameBoard = () => {
     >
       <div 
         ref={containerRef}
-        className="relative pixel-container p-1 sm:p-4 bg-gradient-to-br from-amber-900/20 to-amber-800/20"
+        className="relative pixel-container p-2 sm:p-4 bg-gradient-to-br from-amber-900/20 to-amber-800/20"
         onClick={handleClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -640,7 +664,7 @@ const GameBoard = () => {
         {/* 悬停效果画布 */}
         <canvas
           ref={hoverCanvasRef}
-          className="absolute top-1 left-1 sm:top-4 sm:left-4 pointer-events-none"
+          className="absolute top-2 left-2 sm:top-4 sm:left-4 pointer-events-none"
           style={{ 
             width: `${boardPixelSize}px`,
             height: `${boardPixelSize}px`,

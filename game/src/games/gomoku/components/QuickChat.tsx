@@ -55,8 +55,8 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          "pixel-btn bg-purple-600 hover:bg-purple-700 text-white px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm",
-          className
+          "pixel-btn bg-purple-600 hover:bg-purple-700 text-white",
+          className || "px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm"
         )}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -78,17 +78,34 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
               onClick={() => setIsOpen(false)}
             />
             
-            {/* 聊天面板 */}
+            {/* 聊天面板 - 移动端使用固定定位确保不被遮挡 */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ type: 'spring', damping: 25, stiffness: 400 }}
               className={clsx(
-                "absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50",
-                "pixel-container bg-gray-900 p-3 sm:p-4",
-                "w-[280px] sm:w-[320px] max-h-[300px]"
+                "z-50",
+                // PC端定位
+                "sm:absolute sm:bottom-full sm:mb-2 sm:left-1/2 sm:transform sm:-translate-x-1/2",
+                // 移动端固定在屏幕中央
+                "fixed inset-x-0 bottom-0 sm:inset-auto",
+                "pixel-container bg-gray-900 p-3 sm:p-4"
               )}
+              style={{
+                // 移动端样式
+                ...(window.innerWidth < 640 ? {
+                  left: '50%',
+                  bottom: '50%',
+                  transform: 'translate(-50%, 50%)',
+                  width: 'min(280px, calc(100vw - 32px))',
+                  maxHeight: '300px'
+                } : {
+                  // PC端样式
+                  width: '320px',
+                  maxHeight: '300px'
+                })
+              }}
             >
               {/* 标签切换 */}
               <div className="flex gap-2 mb-3">
@@ -149,8 +166,8 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
                 )}
               </div>
               
-              {/* 小三角 */}
-              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 
+              {/* 小三角 - 仅PC端显示 */}
+              <div className="hidden sm:block absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 
                 border-l-8 border-l-transparent 
                 border-r-8 border-r-transparent 
                 border-t-8 border-t-gray-900">
