@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import GameCard from '@components/GameCard'
 import { Game } from '../types/game'
-import { io } from 'socket.io-client'
+import { useOnlineStats } from '../hooks/useOnlineStats'
 
 // 游戏列表数据
 const games: Game[] = [
@@ -62,76 +62,12 @@ const games: Game[] = [
  */
 const HomePage = () => {
   const [selectedTag, setSelectedTag] = useState('全部')
-  const [onlineUsers, setOnlineUsers] = useState(0)
-  const [isConnected, setIsConnected] = useState(false)
-  const [hasRealData, setHasRealData] = useState(false) // 追踪是否已获取真实数据
+  
+  // 使用新的在线统计Hook
+  const { onlineCount, isConnected } = useOnlineStats()
   
   // 筛选标签列表
   const tags = ['全部', '双人', '单人', '策略', '休闲', '益智']
-  
-  // Socket.IO连接获取在线人数
-  useEffect(() => {
-    // 连接Socket.IO服务器
-    // 如果没有配置VITE_WS_URL或者为空，则使用当前域名（适用于开发环境的代理）
-    const wsUrl = import.meta.env.VITE_WS_URL || ''
-    
-    try {
-      const newSocket = io(wsUrl, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        // 如果使用相对路径，path需要设置为/socket.io
-        path: wsUrl ? undefined : '/socket.io',
-      })
-      
-      newSocket.on('connect', () => {
-        console.log('Socket.IO连接成功, ID:', newSocket.id)
-        setIsConnected(true)
-        // 请求在线人数
-        newSocket.emit('get-online-count')
-      })
-      
-      newSocket.on('online-count', (data: { count: number }) => {
-        console.log('收到在线人数:', data.count)
-        setOnlineUsers(data.count || 0)
-        setHasRealData(true) // 标记已获取真实数据
-      })
-      
-      newSocket.on('user-count-update', (data: { count: number }) => {
-        console.log('在线人数更新:', data.count)
-        setOnlineUsers(data.count || 0)
-        setHasRealData(true) // 标记已获取真实数据
-      })
-      
-      newSocket.on('connect_error', (error: Error) => {
-        console.error('Socket.IO连接错误:', error.message)
-        setIsConnected(false)
-        // 只有在从未获取过真实数据时才显示模拟数据
-        if (!hasRealData) {
-          setOnlineUsers(Math.floor(Math.random() * 50) + 10)
-        }
-      })
-      
-      newSocket.on('disconnect', (reason: string) => {
-        console.log('Socket.IO连接断开:', reason)
-        setIsConnected(false)
-      })
-      
-      // 清理函数
-      return () => {
-        if (newSocket) {
-          newSocket.disconnect()
-        }
-      }
-    } catch (error) {
-      console.error('创建Socket.IO连接失败:', error)
-      // 只有在从未获取过真实数据时才显示模拟数据
-      if (!hasRealData) {
-        setOnlineUsers(Math.floor(Math.random() * 50) + 10)
-      }
-    }
-  }, []) // 不需要添加hasRealData作为依赖，避免重复连接
   
   // 根据选中的标签筛选游戏
   const filteredGames = useMemo(() => {
@@ -145,8 +81,8 @@ const HomePage = () => {
   const stats = useMemo(() => ({
     available: filteredGames.filter(g => g.status === 'available').length,
     comingSoon: filteredGames.filter(g => g.status === 'coming-soon').length,
-    onlineUsers: onlineUsers,
-  }), [filteredGames, onlineUsers])
+    onlineUsers: onlineCount,
+  }), [filteredGames, onlineCount])
   
   return (
     <div className="space-y-8 sm:space-y-12">
