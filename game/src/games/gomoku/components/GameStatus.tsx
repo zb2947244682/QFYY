@@ -89,6 +89,27 @@ const GameStatus = ({ side }: GameStatusProps) => {
               黑棋思考中
             </motion.div>
           )}
+          
+          {isSpectator && gameState === 'waiting' && (
+            <motion.div 
+              className="text-yellow-400 font-pixel text-xs bg-yellow-400/10 px-2 py-0.5 rounded animate-pulse"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              等待开局
+            </motion.div>
+          )}
+          
+          {isSpectator && gameState === 'finished' && winner === 1 && (
+            <motion.div 
+              className="text-yellow-400 font-pixel text-xs bg-yellow-400/10 px-2 py-0.5 rounded"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', damping: 10 }}
+            >
+              ⚫ 黑棋获胜
+            </motion.div>
+          )}
         </div>
       </div>
     )
@@ -138,7 +159,7 @@ const GameStatus = ({ side }: GameStatusProps) => {
             第 {roundNumber} 回合
           </div>
           
-          {gameState === 'waiting' && (
+          {gameState === 'waiting' && !isSpectator && (
             <motion.span 
               className="text-yellow-400 font-pixel text-xs bg-yellow-400/10 px-2 py-0.5 rounded animate-pulse"
               animate={{ opacity: [0.5, 1, 0.5] }}
@@ -148,13 +169,33 @@ const GameStatus = ({ side }: GameStatusProps) => {
             </motion.span>
           )}
           
-          {gameState === 'playing' && currentPlayer !== myColor && (
+          {gameState === 'waiting' && isSpectator && (
+            <motion.span 
+              className="text-yellow-400 font-pixel text-xs bg-yellow-400/10 px-2 py-0.5 rounded animate-pulse"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              等待开局...
+            </motion.span>
+          )}
+          
+          {gameState === 'playing' && !isSpectator && currentPlayer !== myColor && (
             <span className="text-blue-400 font-pixel text-xs bg-blue-400/10 px-2 py-0.5 rounded">
               对手思考中...
             </span>
           )}
           
-          {gameState === 'finished' && (
+          {gameState === 'playing' && isSpectator && currentPlayer === 2 && (
+            <motion.div 
+              className="text-blue-400 font-pixel text-xs bg-blue-400/10 px-2 py-0.5 rounded animate-pulse"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            >
+              白棋思考中
+            </motion.div>
+          )}
+          
+          {gameState === 'finished' && !isSpectator && (
             <motion.span 
               className={`font-pixel text-xs px-2 py-0.5 rounded ${
                 winner === myColor 
@@ -166,6 +207,17 @@ const GameStatus = ({ side }: GameStatusProps) => {
               transition={{ type: 'spring', damping: 10 }}
             >
               {winner === myColor ? '🎉 你赢了！' : '💪 再接再厉'}
+            </motion.span>
+          )}
+          
+          {gameState === 'finished' && isSpectator && (
+            <motion.span 
+              className="text-yellow-400 bg-yellow-400/10 font-pixel text-xs px-2 py-0.5 rounded"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', damping: 10 }}
+            >
+              {winner === 1 ? '⚫ 黑棋获胜' : '⚪ 白棋获胜'}
             </motion.span>
           )}
         </div>
@@ -205,8 +257,11 @@ const GameStatus = ({ side }: GameStatusProps) => {
           <div className="flex flex-col items-center">
             <div className="text-[9px] text-gray-400 font-pixel">第{roundNumber}回合</div>
             <div className="text-[9px] mt-0">
-              {gameState === 'waiting' && (
+              {gameState === 'waiting' && !isSpectator && (
                 <span className="text-yellow-400 font-pixel animate-pulse">等待对手</span>
+              )}
+              {gameState === 'waiting' && isSpectator && (
+                <span className="text-yellow-400 font-pixel animate-pulse">等待开局</span>
               )}
               {gameState === 'playing' && !isSpectator && currentPlayer === myColor && (
                 <span className="text-green-400 font-pixel animate-pulse">你的回合</span>
