@@ -92,25 +92,12 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
               className={clsx(
                 "z-50",
                 // PC端定位
-                "sm:absolute sm:bottom-full sm:mb-2 sm:left-1/2 sm:transform sm:-translate-x-1/2",
+                "sm:absolute sm:bottom-full sm:mb-2 sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:w-80",
                 // 移动端固定在屏幕中央
-                "fixed sm:inset-auto",
-                "pixel-container bg-gray-900 p-3 sm:p-4"
+                "fixed inset-x-4 top-1/2 -translate-y-1/2 sm:inset-auto sm:translate-y-0",
+                "pixel-container bg-gray-900 p-3 sm:p-4",
+                "max-h-[300px] max-w-sm mx-auto"
               )}
-              style={{
-                // 移动端样式 - 确保在屏幕正中央
-                ...(window.innerWidth < 640 ? {
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: 'min(280px, calc(100vw - 32px))',
-                  maxHeight: '300px'
-                } : {
-                  // PC端样式
-                  width: '320px',
-                  maxHeight: '300px'
-                })
-              }}
             >
               {/* 标签切换 */}
               <div className="flex gap-2 mb-3">

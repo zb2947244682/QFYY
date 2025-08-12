@@ -599,10 +599,6 @@ const GomokuGame = () => {
                         </button>
                         
                         <QuickChat onSendMessage={handleSendMessage} className="text-[8px] px-1.5 py-0.5" />
-                        
-                        <span className="text-yellow-400 text-[8px] px-1 py-0.5">
-                          👁️ 观战
-                        </span>
                       </>
                     ) : null}
                     
