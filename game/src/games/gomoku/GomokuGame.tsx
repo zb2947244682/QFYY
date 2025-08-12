@@ -361,7 +361,7 @@ const GomokuGame = () => {
                          history.length < 2
 
   return (
-    <div className="h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden">
       {/* 动态背景 */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         {/* 动态光斑效果 */}
@@ -384,7 +384,7 @@ const GomokuGame = () => {
       </div>
       
       {/* 主内容区 */}
-      <div className="relative z-10 h-screen flex flex-col">
+      <div className="relative z-10 min-h-screen flex flex-col">
         {/* 通知管理器 */}
         <NotificationManager />
         
@@ -440,7 +440,7 @@ const GomokuGame = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.3 }}
-              className="flex-1 flex items-center justify-center px-4"
+              className="flex items-center justify-center px-4 py-4"
             >
               <div className="w-full max-w-2xl">
                 <RoomManager onJoinRoom={() => setIsInRoom(true)} />
@@ -453,10 +453,10 @@ const GomokuGame = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="flex-1 flex flex-col"
+              className="flex flex-col"
             >
               {/* PC端布局 - 紧凑文档流布局 */}
-              <div className="hidden sm:flex flex-1 flex-col">
+              <div className="hidden sm:flex flex-col">
                 {/* 顶部标题栏 - 极简高度 */}
                 <div className="text-center py-0.5">
                   <h1 className="text-base font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
@@ -467,8 +467,8 @@ const GomokuGame = () => {
                   </p>
                 </div>
                 
-                {/* 主游戏区域 - 顶部对齐文档流 */}
-                <div className="flex-1 flex justify-center px-4 pt-1">
+                {/* 主游戏区域 - 使用自然高度，不强制占满 */}
+                <div className="flex justify-center px-4 pt-1">
                   {/* 左侧信息栏 */}
                   <div className="flex-shrink-0">
                     <GameStatus side="left" />
@@ -480,7 +480,7 @@ const GomokuGame = () => {
                     <GameBoard />
                     
                     {/* 控制按钮 - 紧贴棋盘 */}
-                    <div className="flex justify-center gap-1.5 mt-1">
+                    <div className="flex justify-center gap-1.5 mt-1 pb-2">
                       <button
                         onClick={handleRestart}
                         disabled={pendingRestart || waitingForOpponentRestart}
@@ -533,7 +533,7 @@ const GomokuGame = () => {
               </div>
 
               {/* 移动端布局 - 紧凑文档流 */}
-              <div className="sm:hidden flex-1 flex flex-col">
+              <div className="sm:hidden flex flex-col">
                 {/* 游戏标题 - 最小化 */}
                 <div className="text-center py-0.5">
                   <h1 className="text-xs font-game font-bold text-yellow-400">
@@ -546,13 +546,13 @@ const GomokuGame = () => {
                   <GameStatus />
                 </div>
 
-                {/* 游戏内容区 - 顶部对齐 */}
-                <div className="flex-1 flex flex-col items-center pt-0.5">
+                {/* 游戏内容区 - 使用自然高度 */}
+                <div className="flex flex-col items-center pt-0.5">
                   {/* 游戏棋盘 */}
                   <GameBoard />
                   
                   {/* 控制按钮 - 紧贴棋盘 */}
-                  <div className="flex flex-wrap justify-center gap-0.5 mt-0.5 px-1">
+                  <div className="flex flex-wrap justify-center gap-0.5 mt-0.5 px-1 pb-2">
                     <button
                       onClick={handleRestart}
                       disabled={pendingRestart || waitingForOpponentRestart}
