@@ -12,15 +12,16 @@ interface GameOverModalProps {
 }
 
 const GameOverModal = ({ isOpen, onRestart, onClose, waitingForOpponent = false }: GameOverModalProps) => {
-  const { winner, myColor, score } = useGomokuStore()
+  const { winner, myColor, score, userRole } = useGomokuStore()
   const isWinner = winner === myColor
+  const isSpectator = userRole === 'spectator'
   
   // 调试日志
-  console.log('GameOverModal - winner:', winner, 'myColor:', myColor, 'isWinner:', isWinner)
+  console.log('GameOverModal - winner:', winner, 'myColor:', myColor, 'isWinner:', isWinner, 'userRole:', userRole)
   
-  // 如果胜利，放烟花
+  // 如果玩家胜利，放烟花（观众不放烟花）
   useEffect(() => {
-    if (isOpen && isWinner && !waitingForOpponent) {
+    if (isOpen && isWinner && !waitingForOpponent && !isSpectator) {
       // 放多次烟花
       const fire = () => {
         confetti({
@@ -39,7 +40,7 @@ const GameOverModal = ({ isOpen, onRestart, onClose, waitingForOpponent = false 
         clearTimeout(timer2)
       }
     }
-  }, [isOpen, isWinner, waitingForOpponent])
+  }, [isOpen, isWinner, waitingForOpponent, isSpectator])
   
   return (
     <AnimatePresence>
@@ -86,18 +87,34 @@ const GameOverModal = ({ isOpen, onRestart, onClose, waitingForOpponent = false 
                     transition={{ delay: 0.2, type: 'spring' }}
                     className="text-center mb-6"
                   >
-                    <div className="text-6xl mb-4">
-                      {isWinner ? '🏆' : '💪'}
-                    </div>
-                    <h2 className={clsx(
-                      "text-3xl font-game font-bold mb-2",
-                      isWinner ? "text-yellow-400 animate-glow" : "text-gray-400"
-                    )}>
-                      {isWinner ? '恭喜胜利！' : '再接再厉！'}
-                    </h2>
-                    <p className="text-gray-300">
-                      {isWinner ? '你赢得了这局比赛！' : '别灰心，下局再战！'}
-                    </p>
+                    {isSpectator ? (
+                      // 观众视角：只显示谁赢了
+                      <>
+                        <div className="text-6xl mb-4">🎮</div>
+                        <h2 className="text-3xl font-game font-bold text-yellow-400 mb-2">
+                          游戏结束
+                        </h2>
+                        <p className="text-gray-300 text-xl">
+                          {winner === 1 ? '黑棋获胜！' : winner === 2 ? '白棋获胜！' : '平局！'}
+                        </p>
+                      </>
+                    ) : (
+                      // 玩家视角：显示鼓励性内容
+                      <>
+                        <div className="text-6xl mb-4">
+                          {isWinner ? '🏆' : '💪'}
+                        </div>
+                        <h2 className={clsx(
+                          "text-3xl font-game font-bold mb-2",
+                          isWinner ? "text-yellow-400 animate-glow" : "text-gray-400"
+                        )}>
+                          {isWinner ? '恭喜胜利！' : '再接再厉！'}
+                        </h2>
+                        <p className="text-gray-300">
+                          {isWinner ? '你赢得了这局比赛！' : '别灰心，下局再战！'}
+                        </p>
+                      </>
+                    )}
                   </motion.div>
                   
                   {/* 比分显示 */}
@@ -126,21 +143,26 @@ const GameOverModal = ({ isOpen, onRestart, onClose, waitingForOpponent = false 
                   
                   {/* 操作按钮 */}
                   <div className="flex gap-3">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={onRestart}
-                      className="flex-1 pixel-btn bg-green-600 hover:bg-green-700 text-white py-3"
-                    >
-                      再来一局
-                    </motion.button>
+                    {!isSpectator && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={onRestart}
+                        className="flex-1 pixel-btn bg-green-600 hover:bg-green-700 text-white py-3"
+                      >
+                        再来一局
+                      </motion.button>
+                    )}
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={onClose}
-                      className="flex-1 pixel-btn bg-gray-600 hover:bg-gray-700 text-white py-3"
+                      className={clsx(
+                        "pixel-btn bg-gray-600 hover:bg-gray-700 text-white py-3",
+                        isSpectator ? "w-full" : "flex-1"
+                      )}
                     >
-                      查看棋盘
+                      {isSpectator ? '关闭' : '查看棋盘'}
                     </motion.button>
                   </div>
                 </>
