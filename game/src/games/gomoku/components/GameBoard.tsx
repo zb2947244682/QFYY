@@ -53,11 +53,11 @@ const GameBoard = () => {
       const isMobile = vw < 640
       
       if (isMobile) {
-        // 移动端：优化布局确保一屏显示
+        // 移动端：优化布局确保一屏显示（按钮固定在底部）
         const headerHeight = 25  // 顶部标题高度（最小化）
         const statusHeight = 35  // 状态栏高度（优化后）
-        const buttonHeight = 35  // 底部按钮高度（最小化）
-        const padding = 8        // 边距（最小化）
+        const buttonHeight = 40  // 底部按钮高度（固定在底部）
+        const padding = 10       // 边距
         
         // 计算可用的宽度和高度
         const availableWidth = vw - padding * 2
@@ -67,7 +67,7 @@ const GameBoard = () => {
         const maxSize = Math.min(availableWidth, availableHeight)
         
         // 对于非常小的屏幕，进一步缩小棋盘
-        const targetSize = Math.min(maxSize, vw - padding * 2)
+        const targetSize = Math.min(maxSize, availableWidth)
         
         // 计算单元格大小
         const newCellSize = Math.floor(targetSize / boardSize)
@@ -85,23 +85,23 @@ const GameBoard = () => {
           board: newBoardSize
         })
       } else {
-        // PC端：优化布局利用更多空间
-        const headerHeight = 40   // 顶部标题高度（优化后）
-        const buttonHeight = 50   // 底部按钮高度（优化后）
-        const padding = 20        // 边距（减小）
+        // PC端：优化布局利用更多空间（按钮固定在底部）
+        const headerHeight = 45   // 顶部标题高度
+        const buttonHeight = 55   // 底部按钮高度（固定在底部）
+        const padding = 30        // 边距
         
         // 计算可用的高度
         const availableHeight = vh - headerHeight - buttonHeight - padding * 2
         
-        // PC端棋盘尺寸限制 - 增加最大尺寸以充分利用空间
-        const maxSize = Math.min(650, availableHeight * 0.9)  // 增加到650px，使用90%可用高度
+        // PC端棋盘尺寸限制 - 适中的尺寸以避免溢出
+        const maxSize = Math.min(600, availableHeight * 0.85)  // 使用85%可用高度
         
         // 考虑左右信息栏的宽度
         const sidebarWidth = 220 * 2  // 左右各220px
         const availableWidth = vw - sidebarWidth - padding * 2
         
         // 根据高度和宽度计算合适的棋盘尺寸
-        const targetSize = Math.min(maxSize, availableHeight * 0.9, availableWidth)
+        const targetSize = Math.min(maxSize, availableHeight * 0.85, availableWidth)
         
         // 计算单元格大小
         const newCellSize = Math.floor(targetSize / boardSize)

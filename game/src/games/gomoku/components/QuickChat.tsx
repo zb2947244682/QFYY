@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useGomokuStore } from '../store/gameStore'
+// import { useGomokuStore } from '../store/gameStore'  // 移除未使用的导入
 import clsx from 'clsx'
 
 interface QuickChatProps {
@@ -11,7 +11,8 @@ interface QuickChatProps {
 const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<'emoji' | 'phrase'>('emoji')
-  const { gameState } = useGomokuStore()
+  // 移除未使用的gameState
+  // const { gameState } = useGomokuStore()
   
   // 表情列表
   const emojis = [
@@ -46,8 +47,8 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
     setIsOpen(false)
   }
   
-  // 游戏未在进行时不显示
-  if (gameState === 'waiting') return null
+  // 移除游戏状态限制，让聊天按钮始终显示
+  // if (gameState === 'waiting') return null
   
   return (
     <div className="relative inline-block">

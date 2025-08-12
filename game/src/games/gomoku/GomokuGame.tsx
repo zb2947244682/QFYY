@@ -453,12 +453,12 @@ const GomokuGame = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="flex-1 flex flex-col"
+              className="flex-1 flex flex-col h-full"
             >
               {/* PC端布局 - 紧凑布局减少空间浪费 */}
-              <div className="hidden sm:flex flex-1 flex-col">
+              <div className="hidden sm:flex flex-1 flex-col h-full">
                 {/* 顶部标题栏 - 大幅压缩高度 */}
-                <div className="text-center py-1">
+                <div className="text-center py-1 flex-shrink-0">
                   <h1 className="text-xl font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
                     五子棋对战
                   </h1>
@@ -467,8 +467,8 @@ const GomokuGame = () => {
                   </p>
                 </div>
                 
-                {/* 主游戏区域 - 移除垂直居中，改为顶部对齐 */}
-                <div className="flex-1 flex items-start justify-center px-4 pt-2">
+                {/* 主游戏区域 - 使用flex-1占据剩余空间 */}
+                <div className="flex-1 flex items-start justify-center px-4 pt-2 overflow-hidden">
                   {/* 左侧信息栏 */}
                   <div className="flex-shrink-0 pt-4">
                     <GameStatus side="left" />
@@ -485,8 +485,8 @@ const GomokuGame = () => {
                   </div>
                 </div>
                 
-                {/* 底部控制按钮 - 进一步压缩高度 */}
-                <div className="flex justify-center gap-2 py-2">
+                {/* 底部控制按钮 - 固定在底部 */}
+                <div className="flex-shrink-0 flex justify-center gap-2 py-2 bg-gray-900/50 backdrop-blur-sm">
                   <button
                     onClick={handleRestart}
                     disabled={pendingRestart || waitingForOpponentRestart}
@@ -532,26 +532,26 @@ const GomokuGame = () => {
               </div>
 
               {/* 移动端布局 - 极致紧凑布局 */}
-              <div className="sm:hidden flex-1 flex flex-col">
+              <div className="sm:hidden flex-1 flex flex-col h-full">
                 {/* 游戏标题 - 移动端最小化 */}
-                <div className="text-center py-0.5">
+                <div className="text-center py-0.5 flex-shrink-0">
                   <h1 className="text-sm font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
                     五子棋 - {roomId}
                   </h1>
                 </div>
 
                 {/* 游戏状态栏 - 使用更紧凑的样式 */}
-                <div className="px-1">
+                <div className="px-1 flex-shrink-0">
                   <GameStatus />
                 </div>
 
-                {/* 游戏棋盘 - 移除垂直居中，改为顶部对齐 */}
-                <div className="flex-1 flex items-start justify-center pt-1">
+                {/* 游戏棋盘 - 占据剩余空间 */}
+                <div className="flex-1 flex items-start justify-center pt-1 overflow-hidden">
                   <GameBoard />
                 </div>
 
-                {/* 控制按钮 - 移动端极致紧凑 */}
-                <div className="flex flex-wrap justify-center gap-1 py-1 px-1">
+                {/* 控制按钮 - 固定在底部 */}
+                <div className="flex-shrink-0 flex flex-wrap justify-center gap-1 py-1 px-1 bg-gray-900/50 backdrop-blur-sm">
                   <button
                     onClick={handleRestart}
                     disabled={pendingRestart || waitingForOpponentRestart}
