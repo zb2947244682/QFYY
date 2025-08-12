@@ -19,7 +19,7 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
   const [loading, setLoading] = useState(false)
   
   const { socket, connected } = useSocket()
-  const { setRoomInfo } = useGomokuStore()
+  const { setRoomInfo, setUserRole } = useGomokuStore()
 
   // 调试连接状态
   console.log('RoomManager - connected:', connected, 'socket:', socket)
@@ -35,6 +35,7 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
     // 房间创建成功
     socket.on('room-created', (data: { roomId: string, isHost: boolean }) => {
       setRoomInfo(data.roomId, data.isHost)
+      setUserRole('player')
       onJoinRoom()
       setLoading(false)
     })
@@ -42,6 +43,15 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
     // 加入房间成功  
     socket.on('room-joined', (data: { roomId: string, isHost: boolean }) => {
       setRoomInfo(data.roomId, data.isHost)
+      setUserRole('player')
+      onJoinRoom()
+      setLoading(false)
+    })
+    
+    // 以观众身份加入成功
+    socket.on('spectator-joined', (data: { roomId: string, isHost: boolean }) => {
+      setRoomInfo(data.roomId, false)
+      setUserRole('spectator')
       onJoinRoom()
       setLoading(false)
     })
@@ -59,9 +69,10 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
       socket.off('room-list')
       socket.off('room-created')
       socket.off('room-joined')
+      socket.off('spectator-joined')
       socket.off('room-error')
     }
-  }, [socket, onJoinRoom, setRoomInfo])
+  }, [socket, onJoinRoom, setRoomInfo, setUserRole])
 
   const handleCreateRoom = () => {
     if (!socket || !connected) {
@@ -84,6 +95,20 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
     }
     setLoading(true)
     socket.emit('join-room', { roomId: id })
+  }
+  
+  const handleSpectate = (roomId?: string) => {
+    const id = roomId || roomIdInput.trim()
+    if (!id) {
+      alert('请输入房间ID')
+      return
+    }
+    if (!socket || !connected) {
+      alert('未连接到服务器')
+      return
+    }
+    setLoading(true)
+    socket.emit('join-as-spectator', { roomId: id })
   }
 
   return (
@@ -124,23 +149,32 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
         {/* 加入房间 */}
         <div className="space-y-1.5">
           <h3 className="text-sm font-game text-pink-400">加入房间</h3>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2">
             <input
               type="text"
               value={roomIdInput}
               onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())}
               onKeyPress={(e) => e.key === 'Enter' && handleJoinRoom()}
               placeholder="输入房间ID"
-              className="flex-1 px-2 py-1 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-pink-400 focus:outline-none text-xs sm:text-sm"
+              className="w-full px-2 py-1 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-pink-400 focus:outline-none text-xs sm:text-sm"
               maxLength={6}
             />
-            <button
-              onClick={() => handleJoinRoom()}
-              disabled={loading || !connected}
-              className="pixel-btn bg-pink-600 hover:bg-pink-700 py-1 px-3 text-xs sm:text-sm"
-            >
-              加入
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleJoinRoom()}
+                disabled={loading || !connected}
+                className="flex-1 pixel-btn bg-pink-600 hover:bg-pink-700 py-1 px-3 text-xs sm:text-sm"
+              >
+                加入游戏
+              </button>
+              <button
+                onClick={() => handleSpectate()}
+                disabled={loading || !connected}
+                className="flex-1 pixel-btn bg-yellow-600 hover:bg-yellow-700 py-1 px-3 text-xs sm:text-sm"
+              >
+                观战
+              </button>
+            </div>
           </div>
         </div>
 
@@ -168,15 +202,24 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
                       {room.playerCount}/2 玩家
                     </span>
                   </div>
-                  {room.playerCount < 2 && (
+                  <div className="flex gap-1">
+                    {room.playerCount < 2 && (
+                      <button
+                        onClick={() => handleJoinRoom(room.id)}
+                        disabled={loading}
+                        className="px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                      >
+                        加入
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleJoinRoom(room.id)}
+                      onClick={() => handleSpectate(room.id)}
                       disabled={loading}
-                      className="px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                      className="px-2 py-0.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded transition-colors"
                     >
-                      加入
+                      观战
                     </button>
-                  )}
+                  </div>
                 </motion.div>
               ))
             )}

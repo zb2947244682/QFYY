@@ -61,6 +61,7 @@ class RoomManager {
             id: roomId,
             host: hostSocketId,
             players: [hostSocketId],
+            spectators: [], // 观众列表
             readyPlayers: [],
             createdAt: Date.now()
         };
@@ -87,14 +88,15 @@ class RoomManager {
             return { success: false, error: '房间不存在' };
         }
         
+        // 检查是否已经在房间中（作为玩家或观众）
+        if (room.players.includes(playerSocketId) || room.spectators.includes(playerSocketId)) {
+            console.log(`用户已在房间中: ${playerSocketId} in ${roomId}`);
+            return { success: false, error: '已在房间中' };
+        }
+        
         if (room.players.length >= 2) {
             console.log(`房间已满: ${roomId}, 当前玩家数: ${room.players.length}`);
             return { success: false, error: '房间已满' };
-        }
-        
-        if (room.players.includes(playerSocketId)) {
-            console.log(`玩家已在房间中: ${playerSocketId} in ${roomId}`);
-            return { success: false, error: '已在房间中' };
         }
         
         room.players.push(playerSocketId);
@@ -103,7 +105,112 @@ class RoomManager {
         console.log(`玩家 ${playerSocketId} 加入房间 ${roomId}`);
         console.log(`房间 ${roomId} 当前状态:`, room);
         
+        return { success: true, room, role: 'player' };
+    }
+    
+    /**
+     * 以观众身份加入房间
+     * @param {string} roomId - 房间ID
+     * @param {string} spectatorSocketId - 观众的Socket ID
+     * @returns {Object} 加入结果
+     */
+    joinAsSpectator(roomId, spectatorSocketId) {
+        const room = this.rooms.get(roomId);
+        
+        if (!room) {
+            console.log(`房间不存在: ${roomId}`);
+            return { success: false, error: '房间不存在' };
+        }
+        
+        // 检查是否已经在房间中
+        if (room.players.includes(spectatorSocketId) || room.spectators.includes(spectatorSocketId)) {
+            console.log(`用户已在房间中: ${spectatorSocketId} in ${roomId}`);
+            return { success: false, error: '已在房间中' };
+        }
+        
+        room.spectators.push(spectatorSocketId);
+        this.playerRooms.set(spectatorSocketId, roomId);
+        
+        console.log(`观众 ${spectatorSocketId} 加入房间 ${roomId}`);
+        console.log(`房间 ${roomId} 当前观众:`, room.spectators);
+        
+        return { success: true, room, role: 'spectator' };
+    }
+    
+    /**
+     * 从观众转换为玩家
+     * @param {string} socketId - Socket ID
+     * @returns {Object} 转换结果
+     */
+    spectatorToPlayer(socketId) {
+        const roomId = this.playerRooms.get(socketId);
+        if (!roomId) {
+            return { success: false, error: '不在任何房间中' };
+        }
+        
+        const room = this.rooms.get(roomId);
+        if (!room) {
+            return { success: false, error: '房间不存在' };
+        }
+        
+        // 检查是否是观众
+        if (!room.spectators.includes(socketId)) {
+            return { success: false, error: '不是观众' };
+        }
+        
+        // 检查房间是否有空位
+        if (room.players.length >= 2) {
+            return { success: false, error: '房间已满' };
+        }
+        
+        // 从观众列表移除，添加到玩家列表
+        room.spectators = room.spectators.filter(id => id !== socketId);
+        room.players.push(socketId);
+        
+        console.log(`观众 ${socketId} 转换为玩家，房间 ${roomId}`);
+        console.log(`房间 ${roomId} 当前状态:`, room);
+        
         return { success: true, room };
+    }
+    
+    /**
+     * 从玩家转换为观众（认输）
+     * @param {string} socketId - Socket ID
+     * @returns {Object} 转换结果
+     */
+    playerToSpectator(socketId) {
+        const roomId = this.playerRooms.get(socketId);
+        if (!roomId) {
+            return { success: false, error: '不在任何房间中' };
+        }
+        
+        const room = this.rooms.get(roomId);
+        if (!room) {
+            return { success: false, error: '房间不存在' };
+        }
+        
+        // 检查是否是玩家
+        if (!room.players.includes(socketId)) {
+            return { success: false, error: '不是玩家' };
+        }
+        
+        // 从玩家列表移除，添加到观众列表
+        room.players = room.players.filter(id => id !== socketId);
+        room.readyPlayers = room.readyPlayers.filter(id => id !== socketId);
+        room.spectators.push(socketId);
+        
+        // 如果原来是房主，转移房主权限
+        if (room.host === socketId && room.players.length > 0) {
+            room.host = room.players[0];
+            console.log(`房间 ${roomId} 房主转移至 ${room.host}`);
+        }
+        
+        console.log(`玩家 ${socketId} 转换为观众，房间 ${roomId}`);
+        console.log(`房间 ${roomId} 当前状态:`, room);
+        
+        // 返回对手信息（用于判定胜负）
+        const opponent = room.players.find(id => id !== socketId);
+        return { success: true, room, opponent };
     }
     
     /**
@@ -122,8 +229,10 @@ class RoomManager {
         const room = this.rooms.get(roomId);
         
         if (room) {
-            // 移除玩家
+            // 移除玩家或观众
+            const wasPlayer = room.players.includes(playerSocketId);
             room.players = room.players.filter(id => id !== playerSocketId);
+            room.spectators = room.spectators.filter(id => id !== playerSocketId);
             room.readyPlayers = room.readyPlayers.filter(id => id !== playerSocketId);
             
             // 清理重新开始请求
@@ -131,14 +240,15 @@ class RoomManager {
                 room.restartRequests = room.restartRequests.filter(id => id !== playerSocketId);
             }
             
-            console.log(`玩家 ${playerSocketId} 离开房间 ${roomId}`);
+            console.log(`${wasPlayer ? '玩家' : '观众'} ${playerSocketId} 离开房间 ${roomId}`);
             console.log(`房间 ${roomId} 剩余玩家:`, room.players);
+            console.log(`房间 ${roomId} 剩余观众:`, room.spectators);
             
             // 如果房间为空，删除房间
-            if (room.players.length === 0) {
+            if (room.players.length === 0 && room.spectators.length === 0) {
                 this.rooms.delete(roomId);
                 console.log(`房间 ${roomId} 已删除`);
-            } else if (room.host === playerSocketId) {
+            } else if (room.host === playerSocketId && room.players.length > 0) {
                 // 如果房主离开，转移房主
                 room.host = room.players[0];
                 console.log(`房间 ${roomId} 房主转移至 ${room.host}`);
@@ -227,7 +337,7 @@ class RoomManager {
         const timeout = 30 * 60 * 1000; // 30分钟超时
         
         this.rooms.forEach((room, roomId) => {
-            if (now - room.createdAt > timeout && room.players.length === 0) {
+            if (now - room.createdAt > timeout && room.players.length === 0 && room.spectators.length === 0) {
                 this.rooms.delete(roomId);
                 console.log(`清理超时房间: ${roomId}`);
             }
@@ -292,6 +402,39 @@ io.on('connection', (socket) => {
             io.emit('room-list', roomManager.getRoomList());
         } else {
             console.log(`客户端 ${socket.id} 加入房间失败: ${result.error}`);
+            socket.emit('room-error', {
+                message: result.error
+            });
+        }
+    });
+    
+    /**
+     * 以观众身份加入房间事件处理
+     */
+    socket.on('join-as-spectator', (data) => {
+        const { roomId } = data;
+        console.log(`客户端 ${socket.id} 请求以观众身份加入房间 ${roomId}`);
+        
+        const result = roomManager.joinAsSpectator(roomId, socket.id);
+        
+        if (result.success) {
+            socket.join(roomId);
+            socket.emit('spectator-joined', {
+                roomId: roomId,
+                isHost: false
+            });
+            
+            console.log(`客户端 ${socket.id} 以观众身份加入房间成功`);
+            
+            // 通知房间内所有玩家有观众加入
+            socket.to(roomId).emit('spectator-joined', {
+                spectatorId: socket.id
+            });
+            
+            // 更新房间列表
+            io.emit('room-list', roomManager.getRoomList());
+        } else {
+            console.log(`客户端 ${socket.id} 以观众身份加入房间失败: ${result.error}`);
             socket.emit('room-error', {
                 message: result.error
             });
@@ -368,6 +511,9 @@ io.on('connection', (socket) => {
         const room = roomManager.markPlayerReady(socket.id);
         
         if (room) {
+            // 标记游戏已开始
+            room.gameStarted = true;
+            
             // 所有玩家都准备好了，开始游戏
             const players = room.players;
             
@@ -389,21 +535,139 @@ io.on('connection', (socket) => {
                 opponentId: players[blackIndex]
             });
             
+            // 通知所有观众游戏开始
+            room.spectators.forEach(spectatorId => {
+                io.to(spectatorId).emit('game-start-spectator', {
+                    blackPlayer: players[blackIndex],
+                    whitePlayer: players[whiteIndex]
+                });
+            });
+            
             console.log(`游戏开始通知已发送: 房间 ${room.id}`);
         }
     });
     
     /**
-     * 落子事件处理
+     * 从观众转换为玩家事件处理
+     */
+    socket.on('spectator-to-player', () => {
+        console.log(`观众 ${socket.id} 请求转换为玩家`);
+        
+        const result = roomManager.spectatorToPlayer(socket.id);
+        
+        if (result.success) {
+            const room = result.room;
+            
+            socket.emit('role-changed', {
+                role: 'player',
+                roomId: room.id
+            });
+            
+            // 通知房间内其他人
+            socket.to(room.id).emit('user-role-changed', {
+                userId: socket.id,
+                role: 'player'
+            });
+            
+            console.log(`观众 ${socket.id} 成功转换为玩家`);
+            
+            // 如果房间现在有2个玩家，自动准备游戏
+            if (room.players.length === 2) {
+                socket.emit('ready-prompt');
+            }
+        } else {
+            socket.emit('role-change-error', {
+                message: result.error
+            });
+        }
+    });
+    
+    /**
+     * 从玩家转换为观众（到观众席/认输）事件处理
+     */
+    socket.on('player-to-spectator', () => {
+        console.log(`玩家 ${socket.id} 请求转换为观众`);
+        
+        const room = roomManager.getPlayerRoom(socket.id);
+        const gameInProgress = room && room.gameStarted; // 假设有游戏状态标记
+        
+        const result = roomManager.playerToSpectator(socket.id);
+        
+        if (result.success) {
+            const room = result.room;
+            
+            socket.emit('role-changed', {
+                role: 'spectator',
+                roomId: room.id
+            });
+            
+            // 如果游戏正在进行中，这相当于认输
+            if (gameInProgress && result.opponent) {
+                // 通知对手获胜
+                io.to(result.opponent).emit('opponent-surrender', {
+                    winner: room.players.indexOf(result.opponent) === 0 ? 1 : 2
+                });
+                
+                // 通知所有观众游戏结果
+                room.spectators.forEach(spectatorId => {
+                    if (spectatorId !== socket.id) {
+                        io.to(spectatorId).emit('game-ended-by-surrender', {
+                            winnerId: result.opponent,
+                            surrenderId: socket.id
+                        });
+                    }
+                });
+            }
+            
+            // 通知房间内其他人
+            socket.to(room.id).emit('user-role-changed', {
+                userId: socket.id,
+                role: 'spectator',
+                wasSurrender: gameInProgress
+            });
+            
+            console.log(`玩家 ${socket.id} 成功转换为观众`);
+        } else {
+            socket.emit('role-change-error', {
+                message: result.error
+            });
+        }
+    });
+    
+    /**
+     * 落子事件处理（修改以支持观众观看）
      */
     socket.on('make-move', (data) => {
         const { roomId, row, col } = data;
-        console.log(`客户端 ${socket.id} 落子: 房间 ${roomId}, 位置 (${row}, ${col})`);
+        const room = roomManager.getRoom(roomId);
         
-        // 转发给房间内的其他玩家
-        socket.to(roomId).emit('opponent-move', {
-            row: row,
-            col: col
+        if (!room) {
+            console.log(`落子失败：房间 ${roomId} 不存在`);
+            return;
+        }
+        
+        // 只有玩家可以落子
+        if (!room.players.includes(socket.id)) {
+            console.log(`落子失败：${socket.id} 不是玩家`);
+            socket.emit('move-error', { message: '观众不能落子' });
+            return;
+        }
+        
+        console.log(`落子: 房间 ${roomId}, 玩家 ${socket.id}, 位置 (${row}, ${col})`);
+        
+        // 广播给对手
+        const opponent = room.players.find(p => p !== socket.id);
+        if (opponent) {
+            io.to(opponent).emit('opponent-move', { row, col });
+        }
+        
+        // 广播给所有观众
+        room.spectators.forEach(spectatorId => {
+            io.to(spectatorId).emit('game-move', { 
+                row, 
+                col, 
+                playerId: socket.id 
+            });
         });
     });
     
@@ -539,16 +803,34 @@ io.on('connection', (socket) => {
     });
     
     /**
-     * 聊天消息
+     * 聊天消息事件处理（支持玩家和观众）
      */
     socket.on('chat-message', (data) => {
         const { roomId, message } = data;
-        console.log(`客户端 ${socket.id} 发送聊天消息: 房间 ${roomId}, 消息: ${message}`);
+        const room = roomManager.getRoom(roomId);
         
-        // 转发给房间内的其他玩家
+        if (!room) {
+            console.log(`聊天失败：房间 ${roomId} 不存在`);
+            return;
+        }
+        
+        // 检查发送者是否在房间中（玩家或观众）
+        const isInRoom = room.players.includes(socket.id) || room.spectators.includes(socket.id);
+        
+        if (!isInRoom) {
+            console.log(`聊天失败：${socket.id} 不在房间 ${roomId} 中`);
+            return;
+        }
+        
+        const isSpectator = room.spectators.includes(socket.id);
+        
+        console.log(`${isSpectator ? '观众' : '玩家'} ${socket.id} 发送聊天消息: ${message}`);
+        
+        // 广播消息给房间内所有人（包括玩家和观众）
         socket.to(roomId).emit('chat-message', {
             message: message,
-            from: socket.id
+            from: socket.id,
+            isSpectator: isSpectator
         });
     });
     

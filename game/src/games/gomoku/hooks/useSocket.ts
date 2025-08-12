@@ -15,7 +15,9 @@ export const useSocket = () => {
     nextRound,
     undoMove,
     setCanUndo,
-    setWinningLine
+    setWinningLine,
+    setUserRole,
+    userRole
   } = useGomokuStore()
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export const useSocket = () => {
         setConnected(false)
       })
 
-      // 游戏开始
+      // 游戏开始（玩家）
       socketInstance.on('game-start', (data: { playerColor: 1 | 2, opponentId: string }) => {
         console.log('Game started, my color:', data.playerColor, 'opponent:', data.opponentId)
         console.log('Before state update - gameState:', useGomokuStore.getState().gameState)
@@ -90,6 +92,82 @@ export const useSocket = () => {
         
         console.log('After state update - gameState:', useGomokuStore.getState().gameState)
         console.log('After state update - myColor:', useGomokuStore.getState().myColor)
+      })
+      
+      // 游戏开始（观众）
+      socketInstance.on('game-start-spectator', (data: { blackPlayer: string, whitePlayer: string }) => {
+        console.log('Game started for spectator, black:', data.blackPlayer, 'white:', data.whitePlayer)
+        initBoard()
+        setGameState('playing')
+        addNotification('info', '🎯 游戏已开始，你正在观战')
+      })
+      
+      // 角色变更成功
+      socketInstance.on('role-changed', (data: { role: 'player' | 'spectator', roomId: string }) => {
+        console.log('Role changed to:', data.role)
+        setUserRole(data.role)
+        
+        if (data.role === 'spectator') {
+          setPlayerColor(null) // 观众没有颜色
+          addNotification('info', '👁️ 你现在是观众')
+        } else {
+          addNotification('success', '🎮  你现在是玩家')
+        }
+      })
+      
+      // 其他用户角色变更通知
+      socketInstance.on('user-role-changed', (data: { userId: string, role: 'player' | 'spectator', wasSurrender?: boolean }) => {
+        if (data.wasSurrender) {
+          addNotification('info', '🏳️ 一位玩家认输并成为观众')
+        } else if (data.role === 'player') {
+          addNotification('info', '👥 一位观众成为了玩家')
+        } else {
+          addNotification('info', '👁️ 一位玩家成为了观众')
+        }
+      })
+      
+      // 角色变更错误
+      socketInstance.on('role-change-error', (data: { message: string }) => {
+        console.error('Role change error:', data.message)
+        addNotification('error', `❌ ${data.message}`)
+      })
+      
+      // 提示准备游戏（当房间有2个玩家时）
+      socketInstance.on('ready-prompt', () => {
+        console.log('Ready prompt received')
+        if (socketInstance) {
+          socketInstance.emit('ready-to-play')
+        }
+      })
+      
+      // 游戏移动（观众接收）
+      socketInstance.on('game-move', (data: { row: number, col: number, playerId: string }) => {
+        console.log('Game move for spectator:', data)
+        const store = useGomokuStore.getState()
+        
+        // 只有观众处理这个事件
+        if (store.userRole !== 'spectator') return
+        
+        const newBoard = store.board.map(r => [...r])
+        newBoard[data.row][data.col] = store.currentPlayer
+        
+        const winLine = store.checkWin(data.row, data.col, store.currentPlayer)
+        const isWin = winLine !== null
+        
+        store.addHistory(store.currentPlayer, { row: data.row, col: data.col })
+        
+        useGomokuStore.setState({
+          board: newBoard,
+          lastMove: { row: data.row, col: data.col },
+          currentPlayer: store.currentPlayer === 1 ? 2 : 1,
+          winner: isWin ? store.currentPlayer : null,
+          winningLine: winLine,
+          gameState: isWin ? 'finished' : 'playing'
+        })
+        
+        if (isWin) {
+          store.updateScore(store.currentPlayer)
+        }
       })
 
       // 注意：以下事件已在GomokuGame组件中处理，这里不再重复处理
@@ -115,6 +193,12 @@ export const useSocket = () => {
           socketInstance.emit('ready-to-play')
         }
       })
+      
+      // 以观众身份加入成功
+      socketInstance.on('spectator-joined', (data: { roomId: string, isHost: boolean }) => {
+        console.log('Joined as spectator:', data)
+        addNotification('info', `👁️ 已以观众身份加入房间 ${data.roomId}`)
+      })
 
       // 房间错误
       socketInstance.on('room-error', (error: { message: string }) => {
@@ -130,8 +214,11 @@ export const useSocket = () => {
       // 对手落子
       socketInstance.on('opponent-move', (data: { row: number, col: number }) => {
         console.log('Opponent made move:', data)
-        // 更新游戏状态
         const store = useGomokuStore.getState()
+        
+        // 只有玩家处理这个事件
+        if (store.userRole !== 'player') return
+        
         const newBoard = store.board.map(r => [...r])
         newBoard[data.row][data.col] = store.currentPlayer
         
@@ -181,7 +268,7 @@ export const useSocket = () => {
     return () => {
       // 不要在组件卸载时断开连接，保持全局连接
     }
-  }, [setGameState, setPlayerColor, initBoard, addNotification, nextRound, undoMove, setCanUndo, setWinningLine])
+  }, [setGameState, setPlayerColor, initBoard, addNotification, nextRound, undoMove, setCanUndo, setWinningLine, setUserRole, userRole])
 
   // 发送落子信息的函数
   const sendMove = (roomId: string, row: number, col: number) => {
@@ -255,6 +342,22 @@ export const useSocket = () => {
     }
   }
 
+  // 从观众转换为玩家
+  const spectatorToPlayer = () => {
+    if (socketInstance) {
+      console.log('Requesting to become player')
+      socketInstance.emit('spectator-to-player')
+    }
+  }
+  
+  // 从玩家转换为观众（到观众席）
+  const playerToSpectator = () => {
+    if (socketInstance) {
+      console.log('Requesting to become spectator')
+      socketInstance.emit('player-to-spectator')
+    }
+  }
+
   return {
     socket: socketInstance,
     connected,
@@ -266,6 +369,8 @@ export const useSocket = () => {
     acceptUndo,
     rejectUndo,
     surrender,
-    sendChatMessage
+    sendChatMessage,
+    spectatorToPlayer,
+    playerToSpectator
   }
 }

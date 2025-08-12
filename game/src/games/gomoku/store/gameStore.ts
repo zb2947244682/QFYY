@@ -3,6 +3,7 @@ import { create } from 'zustand'
 export type Player = 1 | 2
 export type Cell = 0 | Player
 export type GameState = 'waiting' | 'playing' | 'finished'
+export type UserRole = 'player' | 'spectator' | null
 
 interface Position {
   row: number
@@ -33,6 +34,10 @@ interface GomokuStore {
   lastMove: Position | null
   winningLine: Position[] | null  // 五子连线的位置
   
+  // 用户角色
+  userRole: UserRole
+  spectatorCount: number
+  
   // 游戏历史
   history: GameHistory[]
   canUndo: boolean
@@ -56,7 +61,7 @@ interface GomokuStore {
   // 动作
   initBoard: () => void
   makeMove: (row: number, col: number) => boolean
-  setPlayerColor: (color: Player) => void
+  setPlayerColor: (color: Player | null) => void
   setGameState: (state: GameState) => void
   setRoomInfo: (roomId: string | null, isHost: boolean) => void
   resetGame: () => void
@@ -72,6 +77,11 @@ interface GomokuStore {
   setCanUndo: (canUndo: boolean) => void
   undoMove: () => void
   setWinningLine: (line: Position[] | null) => void
+  
+  // 角色相关动作
+  setUserRole: (role: UserRole) => void
+  setSpectatorCount: (count: number) => void
+  canMakeMove: () => boolean  // 判断当前用户是否可以落子
 }
 
 const BOARD_SIZE = 13
@@ -90,6 +100,10 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
   winner: null,
   lastMove: null,
   winningLine: null,
+  
+  // 用户角色
+  userRole: null,
+  spectatorCount: 0,
   
   // 游戏历史
   history: [],
@@ -132,10 +146,13 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
 
   // 落子
   makeMove: (row: number, col: number) => {
-    const { board, currentPlayer, gameState, myColor, boardSize } = get()
+    const { board, currentPlayer, gameState, myColor, boardSize, userRole } = get()
     
     // 检查游戏状态
     if (gameState !== 'playing') return false
+    
+    // 观众不能落子
+    if (userRole === 'spectator') return false
     
     // 检查是否轮到自己
     if (currentPlayer !== myColor) return false
@@ -176,7 +193,7 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
   },
 
   // 设置玩家颜色
-  setPlayerColor: (color: Player) => {
+  setPlayerColor: (color: Player | null) => {
     set({ myColor: color })
   },
 
@@ -208,7 +225,9 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
       notifications: [],
       score: { black: 0, white: 0 },
       roundNumber: 1,
-      firstPlayer: 1
+      firstPlayer: 1,
+      userRole: null,
+      spectatorCount: 0
     })
   },
 
@@ -369,5 +388,21 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
   // 设置获胜连线
   setWinningLine: (line) => {
     set({ winningLine: line })
+  },
+  
+  // 设置用户角色
+  setUserRole: (role) => {
+    set({ userRole: role })
+  },
+  
+  // 设置观众数量
+  setSpectatorCount: (count) => {
+    set({ spectatorCount: count })
+  },
+  
+  // 判断当前用户是否可以落子
+  canMakeMove: () => {
+    const { userRole, myColor, currentPlayer, gameState } = get()
+    return userRole === 'player' && myColor === currentPlayer && gameState === 'playing'
   }
 }))

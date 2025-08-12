@@ -44,7 +44,8 @@ const GomokuGame = () => {
     canUndo,
     winner,
     addNotification,
-    history
+    history,
+    userRole  // 添加用户角色
   } = useGomokuStore()
   
   const { 
@@ -56,8 +57,9 @@ const GomokuGame = () => {
     requestUndo,
     acceptUndo,
     rejectUndo,
-    surrender,
-    sendChatMessage
+    sendChatMessage,
+    spectatorToPlayer,  // 添加角色转换方法
+    playerToSpectator   // 添加角色转换方法
   } = useSocket()
 
   // 调试连接状态
@@ -315,11 +317,11 @@ const GomokuGame = () => {
   }
 
   /**
-   * 处理认输
+   * 处理认输（转到观众席）
    */
   const handleSurrender = () => {
-    if (gameState !== 'playing') {
-      addNotification('warning', '⚠️ 游戏未在进行中')
+    if (gameState !== 'playing' || userRole !== 'player') {
+      addNotification('warning', '⚠️ 当前不能认输')
       return
     }
     
@@ -328,20 +330,11 @@ const GomokuGame = () => {
   }
   
   /**
-   * 确认认输
+   * 确认认输（移到观众席）
    */
   const handleConfirmSurrender = () => {
-    if (socket && roomId && myColor) {
-      surrender(roomId, myColor)
-      // 更新本地状态
-      const opponentColor = myColor === 1 ? 2 : 1
-      useGomokuStore.setState({
-        gameState: 'finished',
-        winner: opponentColor
-      })
-      useGomokuStore.getState().updateScore(opponentColor)
-      addNotification('info', '🏳️ 你认输了，再接再厉！')
-    }
+    // 玩家转为观众（相当于认输）
+    playerToSpectator()
     setShowSurrenderConfirm(false)
   }
   
@@ -351,6 +344,13 @@ const GomokuGame = () => {
   const handleCancelSurrender = () => {
     setShowSurrenderConfirm(false)
     addNotification('info', '💪 继续加油！')
+  }
+
+  /**
+   * 处理成为玩家
+   */
+  const handleBecomePlayer = () => {
+    spectatorToPlayer()
   }
 
   // 判断悔棋按钮是否应该禁用
@@ -401,9 +401,9 @@ const GomokuGame = () => {
       {/* 认输确认对话框 */}
       <ConfirmDialog
         isOpen={showSurrenderConfirm}
-        title="认输确认"
-        message="确定要认输吗？认输后游戏将结束。"
-        confirmText="认输"
+        title="到观众席确认"
+        message="确定要到观众席吗？这相当于认输，游戏将结束。"
+        confirmText="确认"
         cancelText="取消"
         onConfirm={handleConfirmSurrender}
         onCancel={handleCancelSurrender}
@@ -458,40 +458,59 @@ const GomokuGame = () => {
                     
                     {/* 控制按钮 - 紧贴棋盘 */}
                     <div className="flex justify-center gap-1.5 mt-1 pb-2">
-                      <button
-                        onClick={handleRestart}
-                        disabled={pendingRestart || waitingForOpponentRestart}
-                        className={clsx(
-                          "pixel-btn text-xs px-2.5 py-1 transition-all",
-                          (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
-                        )}
-                      >
-                        {waitingForOpponentRestart ? '等待对手...' : pendingRestart ? '等待确认...' : '重新开始'}
-                      </button>
-                      
-                      <button
-                        onClick={handleUndo}
-                        disabled={isUndoDisabled}
-                        className={clsx(
-                          "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs px-2.5 py-1 transition-all",
-                          isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
-                        )}
-                      >
-                        {pendingUndo ? '等待确认...' : '悔棋'}
-                      </button>
-                      
-                      <QuickChat onSendMessage={handleSendMessage} />
-                      
-                      <button
-                        onClick={handleSurrender}
-                        disabled={gameState !== 'playing'}
-                        className={clsx(
-                          "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs px-2.5 py-1 transition-all",
-                          gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
-                        )}
-                      >
-                        认输
-                      </button>
+                      {userRole === 'player' ? (
+                        <>
+                          <button
+                            onClick={handleRestart}
+                            disabled={pendingRestart || waitingForOpponentRestart}
+                            className={clsx(
+                              "pixel-btn text-xs px-2.5 py-1 transition-all",
+                              (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
+                            )}
+                          >
+                            {waitingForOpponentRestart ? '等待对手...' : pendingRestart ? '等待确认...' : '重新开始'}
+                          </button>
+                          
+                          <button
+                            onClick={handleUndo}
+                            disabled={isUndoDisabled}
+                            className={clsx(
+                              "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs px-2.5 py-1 transition-all",
+                              isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
+                            )}
+                          >
+                            {pendingUndo ? '等待确认...' : '悔棋'}
+                          </button>
+                          
+                          <QuickChat onSendMessage={handleSendMessage} />
+                          
+                          <button
+                            onClick={handleSurrender}
+                            disabled={gameState !== 'playing'}
+                            className={clsx(
+                              "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs px-2.5 py-1 transition-all",
+                              gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
+                            )}
+                          >
+                            到观众席
+                          </button>
+                        </>
+                      ) : userRole === 'spectator' ? (
+                        <>
+                          <button
+                            onClick={handleBecomePlayer}
+                            className="pixel-btn bg-green-600 hover:bg-green-700 text-xs px-2.5 py-1 transition-all"
+                          >
+                            成为玩家
+                          </button>
+                          
+                          <QuickChat onSendMessage={handleSendMessage} />
+                          
+                          <span className="text-yellow-400 text-xs px-2 py-1">
+                            👁️ 观战模式
+                          </span>
+                        </>
+                      ) : null}
                       
                       <button
                         onClick={handleLeaveRoom}
@@ -530,40 +549,59 @@ const GomokuGame = () => {
                   
                   {/* 控制按钮 - 紧贴棋盘 */}
                   <div className="flex flex-wrap justify-center gap-0.5 mt-0.5 px-1 pb-2">
-                    <button
-                      onClick={handleRestart}
-                      disabled={pendingRestart || waitingForOpponentRestart}
-                      className={clsx(
-                        "pixel-btn text-[8px] px-1.5 py-0.5 transition-all",
-                        (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      {waitingForOpponentRestart || pendingRestart ? '等待' : '重开'}
-                    </button>
-                    
-                    <button
-                      onClick={handleUndo}
-                      disabled={isUndoDisabled}
-                      className={clsx(
-                        "pixel-btn bg-blue-600 hover:bg-blue-700 text-[8px] px-1.5 py-0.5 transition-all",
-                        isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
-                      )}
-                    >
-                      {pendingUndo ? '等待' : '悔棋'}
-                    </button>
-                    
-                    <QuickChat onSendMessage={handleSendMessage} className="text-[8px] px-1.5 py-0.5" />
-                    
-                    <button
-                      onClick={handleSurrender}
-                      disabled={gameState !== 'playing'}
-                      className={clsx(
-                        "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-[8px] px-1.5 py-0.5 transition-all",
-                        gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
-                      )}
-                    >
-                      认输
-                    </button>
+                    {userRole === 'player' ? (
+                      <>
+                        <button
+                          onClick={handleRestart}
+                          disabled={pendingRestart || waitingForOpponentRestart}
+                          className={clsx(
+                            "pixel-btn text-[8px] px-1.5 py-0.5 transition-all",
+                            (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
+                          )}
+                        >
+                          {waitingForOpponentRestart || pendingRestart ? '等待' : '重开'}
+                        </button>
+                        
+                        <button
+                          onClick={handleUndo}
+                          disabled={isUndoDisabled}
+                          className={clsx(
+                            "pixel-btn bg-blue-600 hover:bg-blue-700 text-[8px] px-1.5 py-0.5 transition-all",
+                            isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
+                          )}
+                        >
+                          {pendingUndo ? '等待' : '悔棋'}
+                        </button>
+                        
+                        <QuickChat onSendMessage={handleSendMessage} className="text-[8px] px-1.5 py-0.5" />
+                        
+                        <button
+                          onClick={handleSurrender}
+                          disabled={gameState !== 'playing'}
+                          className={clsx(
+                            "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-[8px] px-1.5 py-0.5 transition-all",
+                            gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
+                          )}
+                        >
+                          观众席
+                        </button>
+                      </>
+                    ) : userRole === 'spectator' ? (
+                      <>
+                        <button
+                          onClick={handleBecomePlayer}
+                          className="pixel-btn bg-green-600 hover:bg-green-700 text-[8px] px-1.5 py-0.5 transition-all"
+                        >
+                          成玩家
+                        </button>
+                        
+                        <QuickChat onSendMessage={handleSendMessage} className="text-[8px] px-1.5 py-0.5" />
+                        
+                        <span className="text-yellow-400 text-[8px] px-1 py-0.5">
+                          👁️ 观战
+                        </span>
+                      </>
+                    ) : null}
                     
                     <button
                       onClick={handleLeaveRoom}
