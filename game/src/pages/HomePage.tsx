@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
 import GameCard from '@components/GameCard'
 import { Game } from '../types/game'
+import { io } from 'socket.io-client'
 
 // 游戏列表数据
 const games: Game[] = [
@@ -67,54 +68,61 @@ const HomePage = () => {
   // 筛选标签列表
   const tags = ['全部', '双人', '单人', '策略', '休闲', '益智']
   
-  // WebSocket连接获取在线人数
+  // Socket.IO连接获取在线人数
   useEffect(() => {
-    // 检查是否有WebSocket服务器配置
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3333'
+    // 连接Socket.IO服务器
+    // 如果没有配置VITE_WS_URL或者为空，则使用当前域名（适用于开发环境的代理）
+    const wsUrl = import.meta.env.VITE_WS_URL || ''
     
     try {
-      const ws = new WebSocket(wsUrl)
+      const newSocket = io(wsUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        // 如果使用相对路径，path需要设置为/socket.io
+        path: wsUrl ? undefined : '/socket.io',
+      })
       
-      ws.onopen = () => {
-        console.log('WebSocket连接成功')
+      newSocket.on('connect', () => {
+        console.log('Socket.IO连接成功, ID:', newSocket.id)
         setIsConnected(true)
         // 请求在线人数
-        ws.send(JSON.stringify({ type: 'get_online_count' }))
-      }
+        newSocket.emit('get-online-count')
+      })
       
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          if (data.type === 'online_count') {
-            setOnlineUsers(data.count || 0)
-          } else if (data.type === 'user_count_update') {
-            setOnlineUsers(data.count || 0)
-          }
-        } catch (error) {
-          console.error('解析WebSocket消息失败:', error)
+      newSocket.on('online-count', (data: { count: number }) => {
+        console.log('收到在线人数:', data.count)
+        setOnlineUsers(data.count || 0)
+      })
+      
+      newSocket.on('user-count-update', (data: { count: number }) => {
+        console.log('在线人数更新:', data.count)
+        setOnlineUsers(data.count || 0)
+      })
+      
+      newSocket.on('connect_error', (error: Error) => {
+        console.error('Socket.IO连接错误:', error.message)
+        setIsConnected(false)
+        // 如果没有服务器连接，显示模拟数据
+        if (!onlineUsers) {
+          setOnlineUsers(Math.floor(Math.random() * 50) + 10)
         }
-      }
+      })
       
-      ws.onerror = (error) => {
-        console.error('WebSocket错误:', error)
+      newSocket.on('disconnect', (reason: string) => {
+        console.log('Socket.IO连接断开:', reason)
         setIsConnected(false)
-        // 如果没有WebSocket服务器，显示模拟数据
-        setOnlineUsers(Math.floor(Math.random() * 50) + 10)
-      }
-      
-      ws.onclose = () => {
-        console.log('WebSocket连接关闭')
-        setIsConnected(false)
-      }
+      })
       
       // 清理函数
       return () => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.close()
+        if (newSocket) {
+          newSocket.disconnect()
         }
       }
     } catch (error) {
-      console.error('创建WebSocket连接失败:', error)
+      console.error('创建Socket.IO连接失败:', error)
       // 显示模拟数据
       setOnlineUsers(Math.floor(Math.random() * 50) + 10)
     }

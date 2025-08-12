@@ -348,13 +348,29 @@ class RoomManager {
 // 创建房间管理器实例
 const roomManager = new RoomManager();
 
-
+// 在线用户计数
+let onlineUsersCount = 0;
 
 /**
  * Socket.IO连接处理
  */
 io.on('connection', (socket) => {
     console.log(`客户端连接: ${socket.id}`);
+    
+    // 增加在线人数
+    onlineUsersCount++;
+    console.log(`当前在线人数: ${onlineUsersCount}`);
+    
+    // 广播在线人数更新
+    io.emit('user-count-update', { count: onlineUsersCount });
+    
+    /**
+     * 获取在线人数事件处理
+     */
+    socket.on('get-online-count', () => {
+        console.log(`客户端 ${socket.id} 请求在线人数`);
+        socket.emit('online-count', { count: onlineUsersCount });
+    });
     
     /**
      * 创建房间事件处理
@@ -839,6 +855,13 @@ io.on('connection', (socket) => {
      */
     socket.on('disconnect', () => {
         console.log(`客户端断开连接: ${socket.id}`);
+        
+        // 减少在线人数
+        onlineUsersCount--;
+        console.log(`当前在线人数: ${onlineUsersCount}`);
+        
+        // 广播在线人数更新
+        io.emit('user-count-update', { count: onlineUsersCount });
         
         const room = roomManager.leaveRoom(socket.id);
         
