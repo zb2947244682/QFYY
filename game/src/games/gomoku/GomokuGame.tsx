@@ -502,7 +502,7 @@ const GomokuGame = () => {
                             {pendingUndo ? '等待确认...' : '悔棋'}
                           </button>
                           
-                          <QuickChat onSendMessage={handleSendMessage} className="text-xs px-2.5 py-1" />
+                          <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-xs px-2.5 py-1" />
                           
                           <button
                             onClick={handleSurrender}
@@ -531,7 +531,7 @@ const GomokuGame = () => {
                             成为玩家
                           </button>
                           
-                          <QuickChat onSendMessage={handleSendMessage} className="text-xs px-2.5 py-1" />
+                          <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-xs px-2.5 py-1" />
                           
                           <span className="text-yellow-400 text-xs px-2 py-1">
                             👁️ 观战模式
@@ -600,7 +600,7 @@ const GomokuGame = () => {
                           {pendingUndo ? '等待' : '悔棋'}
                         </button>
                         
-                        <QuickChat onSendMessage={handleSendMessage} className="text-[8px] px-1.5 py-0.5" />
+                        <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-[8px] px-1.5 py-0.5" />
                         
                         <button
                           onClick={handleSurrender}
@@ -629,7 +629,7 @@ const GomokuGame = () => {
                           成玩家
                         </button>
                         
-                        <QuickChat onSendMessage={handleSendMessage} className="text-[8px] px-1.5 py-0.5" />
+                        <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-[8px] px-1.5 py-0.5" />
                       </>
                     ) : null}
                     

@@ -2,13 +2,15 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 // import { useGomokuStore } from '../store/gameStore'  // 移除未使用的导入
 import clsx from 'clsx'
+import type { UserRole } from '../store/gameStore'
 
 interface QuickChatProps {
   onSendMessage: (message: string) => void
+  userRole?: UserRole
   className?: string
 }
 
-const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
+const QuickChat = ({ onSendMessage, userRole = null, className = '' }: QuickChatProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<'emoji' | 'phrase'>('emoji')
   // 移除未使用的gameState
@@ -22,8 +24,8 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
     '😤', '😮', '😲', '🤯', '😱', '🙈'
   ]
   
-  // 快捷短语列表
-  const phrases = [
+  // 选手专用短语列表
+  const playerPhrases = [
     '你好呀！一起来玩吧～',
     '承让承让，侥幸而已！',
     '哇，这步棋真是绝了！',
@@ -45,6 +47,33 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
     '稳住，我们能赢！',
     '今天手感不太好啊...'
   ]
+  
+  // 观众专用短语列表
+  const spectatorPhrases = [
+    '黑棋加油！你是最棒的！',
+    '白棋必胜！冲冲冲！',
+    '精彩！这局真是太精彩了！',
+    '黑棋这步棋下得妙啊！',
+    '白棋好厉害，学到了！',
+    '这是高手过招啊！',
+    '快看快看，要分胜负了！',
+    '黑棋稳住，马上就赢了！',
+    '白棋反击！还有机会！',
+    '太刺激了，我都紧张了！',
+    '这局势焦灼啊，谁都有机会',
+    '黑棋防守！要小心了！',
+    '白棋进攻！就是现在！',
+    '神仙打架，我等凡人观战',
+    '这棋局值得收藏学习',
+    '前排围观，吃瓜看戏🍿',
+    '支持黑棋，黑棋YYDS！',
+    '白棋粉丝团在此应援！',
+    '大家好，我是新来的观众',
+    '求解说，看不懂局势了'
+  ]
+  
+  // 根据用户角色选择短语列表
+  const phrases = userRole === 'spectator' ? spectatorPhrases : playerPhrases
   
   const handleSend = (content: string) => {
     onSendMessage(content)
