@@ -18,7 +18,7 @@ const Layout = () => {
   const isHomePage = location.pathname === '/'
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <div className="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
       {/* 背景动画粒子效果 - 在移动端减少粒子数量以提升性能 */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {[...Array(window.innerWidth < 768 ? 20 : 50)].map((_, i) => (
@@ -44,7 +44,7 @@ const Layout = () => {
 
       {/* 头部导航 - 优化移动端布局 */}
       <header className="relative z-10">
-        <nav className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <nav className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
           <div className="flex justify-between items-center">
             <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
               <motion.div
@@ -55,7 +55,7 @@ const Layout = () => {
               >
                 <span className="text-white font-bold text-lg sm:text-xl">G</span>
               </motion.div>
-              <h1 className="text-lg sm:text-2xl font-game font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <h1 className="text-base sm:text-xl font-game font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 <span className="hidden sm:inline">Game Collection</span>
                 <span className="sm:hidden">游戏合集</span>
               </h1>
@@ -69,7 +69,7 @@ const Layout = () => {
                 >
                   <Link 
                     to="/" 
-                    className="pixel-btn text-xs px-3 py-2 sm:px-4 sm:py-3 flex items-center justify-center"
+                    className="pixel-btn text-xs px-2 py-1 sm:px-3 sm:py-2 flex items-center justify-center"
                   >
                     <span className="hidden sm:inline">返回首页</span>
                     <span className="sm:hidden">首页</span>
@@ -85,7 +85,7 @@ const Layout = () => {
       </header>
 
       {/* 主内容区域 - 优化移动端间距 */}
-      <main className="relative z-10 container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <main className="relative z-10 container mx-auto px-3 sm:px-4 py-1 sm:py-2">
         <motion.div
           key={location.pathname}
           initial={{ opacity: 0, y: 20 }}
@@ -98,8 +98,8 @@ const Layout = () => {
       </main>
 
       {/* 页脚 - 移动端简化显示 */}
-      <footer className="relative z-10 mt-auto">
-        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <footer className="relative z-10">
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
           <div className="text-center text-xs sm:text-sm text-gray-500 font-pixel">
             © 2024 Game Collection
           </div>

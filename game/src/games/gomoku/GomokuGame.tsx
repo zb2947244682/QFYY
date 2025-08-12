@@ -361,9 +361,9 @@ const GomokuGame = () => {
                          history.length < 2
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* 动态背景 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="relative">
+      {/* 动态背景 - 使用fixed定位 */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         {/* 动态光斑效果 */}
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-20 left-20 w-96 h-96 bg-purple-500 rounded-full blur-3xl animate-pulse"></div>
@@ -384,7 +384,7 @@ const GomokuGame = () => {
       </div>
       
       {/* 主内容区 */}
-      <div className="relative z-10 min-h-screen flex flex-col">
+      <div className="relative z-10">
         {/* 通知管理器 */}
         <NotificationManager />
         
@@ -440,7 +440,7 @@ const GomokuGame = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.3 }}
-              className="flex items-center justify-center px-4 py-4"
+              className="flex items-center justify-center px-4 py-2"
             >
               <div className="w-full max-w-2xl">
                 <RoomManager onJoinRoom={() => setIsInRoom(true)} />

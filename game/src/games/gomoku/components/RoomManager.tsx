@@ -87,16 +87,16 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <h2 className="text-xl sm:text-2xl font-game font-bold text-white mb-1">
+        <h2 className="text-lg sm:text-xl font-game font-bold text-white">
           五子棋房间管理
         </h2>
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-400 text-xs sm:text-sm">
           创建新房间或加入现有房间开始游戏
         </p>
       </motion.div>
@@ -105,15 +105,15 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="bg-gray-800 rounded-lg p-4 sm:p-5 space-y-3"
+        className="bg-gray-800 rounded-lg p-3 sm:p-4 space-y-2"
       >
         {/* 创建房间 */}
-        <div className="space-y-2">
-          <h3 className="text-base font-game text-purple-400">创建新房间</h3>
+        <div className="space-y-1.5">
+          <h3 className="text-sm font-game text-purple-400">创建新房间</h3>
           <button
             onClick={handleCreateRoom}
             disabled={loading || !connected}
-            className="w-full pixel-btn bg-purple-600 hover:bg-purple-700 py-2 text-sm"
+            className="w-full pixel-btn bg-purple-600 hover:bg-purple-700 py-1.5 text-xs sm:text-sm"
           >
             {loading ? '创建中...' : '创建房间'}
           </button>
@@ -122,8 +122,8 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
         <div className="border-t border-gray-700"></div>
 
         {/* 加入房间 */}
-        <div className="space-y-2">
-          <h3 className="text-base font-game text-pink-400">加入房间</h3>
+        <div className="space-y-1.5">
+          <h3 className="text-sm font-game text-pink-400">加入房间</h3>
           <div className="flex gap-2">
             <input
               type="text"
@@ -131,13 +131,13 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
               onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())}
               onKeyPress={(e) => e.key === 'Enter' && handleJoinRoom()}
               placeholder="输入房间ID"
-              className="flex-1 px-3 py-1.5 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-pink-400 focus:outline-none text-sm"
+              className="flex-1 px-2 py-1 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-pink-400 focus:outline-none text-xs sm:text-sm"
               maxLength={6}
             />
             <button
               onClick={() => handleJoinRoom()}
               disabled={loading || !connected}
-              className="pixel-btn bg-pink-600 hover:bg-pink-700 py-1.5 px-4 text-sm"
+              className="pixel-btn bg-pink-600 hover:bg-pink-700 py-1 px-3 text-xs sm:text-sm"
             >
               加入
             </button>
@@ -147,21 +147,21 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
         <div className="border-t border-gray-700"></div>
 
         {/* 可用房间列表 */}
-        <div className="space-y-2">
-          <h3 className="text-base font-game text-blue-400">可用房间</h3>
-          <div className="space-y-1.5 max-h-40 sm:max-h-48 overflow-y-auto custom-scrollbar">
+        <div className="space-y-1.5">
+          <h3 className="text-sm font-game text-blue-400">可用房间</h3>
+          <div className="space-y-1 max-h-32 sm:max-h-40 overflow-y-auto custom-scrollbar">
             {rooms.length === 0 ? (
-              <p className="text-gray-500 text-center py-3 text-sm">暂无可用房间</p>
+              <p className="text-gray-500 text-center py-2 text-xs sm:text-sm">暂无可用房间</p>
             ) : (
               rooms.map((room) => (
                 <motion.div
                   key={room.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center justify-between p-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+                  className="flex items-center justify-between p-1.5 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
                 >
                   <div>
-                    <span className="font-pixel text-yellow-400 text-sm">
+                    <span className="font-pixel text-yellow-400 text-xs sm:text-sm">
                       {room.id}
                     </span>
                     <span className="ml-2 text-xs text-gray-400">
@@ -172,7 +172,7 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
                     <button
                       onClick={() => handleJoinRoom(room.id)}
                       disabled={loading}
-                      className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                      className="px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
                     >
                       加入
                     </button>
