@@ -38,6 +38,10 @@ interface GomokuStore {
   userRole: UserRole
   spectatorCount: number
   
+  // 玩家昵称
+  myNickname: string | null
+  opponentNickname: string | null
+  
   // 游戏历史
   history: GameHistory[]
   canUndo: boolean
@@ -82,9 +86,25 @@ interface GomokuStore {
   setUserRole: (role: UserRole) => void
   setSpectatorCount: (count: number) => void
   canMakeMove: () => boolean  // 判断当前用户是否可以落子
+  
+  // 昵称相关动作
+  setMyNickname: (nickname: string) => void
+  setOpponentNickname: (nickname: string) => void
+  generateRandomNickname: () => string
 }
 
 const BOARD_SIZE = 13
+
+// 随机昵称生成相关
+const ADJECTIVES = [
+  '快乐的', '聪明的', '勇敢的', '可爱的', '厉害的', '机智的', '活泼的', '霸气的', 
+  '淡定的', '优雅的', '神秘的', '幸运的', '专注的', '认真的', '潇洒的', '冷静的'
+]
+
+const ANIMALS = [
+  '熊猫', '狐狸', '老虎', '狮子', '兔子', '猫咪', '狗狗', '猴子',
+  '企鹅', '海豚', '鲸鱼', '老鹰', '凤凰', '龙龙', '独角兽', '考拉'
+]
 
 const createEmptyBoard = (): Cell[][] => {
   return Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0))
@@ -104,6 +124,10 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
   // 用户角色
   userRole: null,
   spectatorCount: 0,
+  
+  // 玩家昵称
+  myNickname: null,
+  opponentNickname: null,
   
   // 游戏历史
   history: [],
@@ -227,7 +251,9 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
       roundNumber: 1,
       firstPlayer: 1,
       userRole: null,
-      spectatorCount: 0
+      spectatorCount: 0,
+      myNickname: null,
+      opponentNickname: null
     })
   },
 
@@ -404,5 +430,23 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
   canMakeMove: () => {
     const { userRole, myColor, currentPlayer, gameState } = get()
     return userRole === 'player' && myColor === currentPlayer && gameState === 'playing'
+  },
+  
+  // 设置我的昵称
+  setMyNickname: (nickname) => {
+    set({ myNickname: nickname })
+  },
+  
+  // 设置对手昵称
+  setOpponentNickname: (nickname) => {
+    set({ opponentNickname: nickname })
+  },
+  
+  // 生成随机昵称
+  generateRandomNickname: () => {
+    const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
+    const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)]
+    const number = Math.floor(Math.random() * 100)
+    return `${adjective}${animal}${number}`
   }
 }))

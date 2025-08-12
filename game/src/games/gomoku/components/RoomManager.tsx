@@ -19,7 +19,7 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
   const [loading, setLoading] = useState(false)
   
   const { socket, connected } = useSocket()
-  const { setRoomInfo, setUserRole } = useGomokuStore()
+  const { setRoomInfo, setUserRole, generateRandomNickname, setMyNickname } = useGomokuStore()
 
   // 调试连接状态
   console.log('RoomManager - connected:', connected, 'socket:', socket)
@@ -34,6 +34,13 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
 
     // 房间创建成功
     socket.on('room-created', (data: { roomId: string, isHost: boolean }) => {
+      // 生成并设置随机昵称
+      const nickname = generateRandomNickname()
+      setMyNickname(nickname)
+      
+      // 发送昵称到服务器
+      socket.emit('set-nickname', { roomId: data.roomId, nickname })
+      
       setRoomInfo(data.roomId, data.isHost)
       setUserRole('player')
       onJoinRoom()
@@ -42,6 +49,13 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
 
     // 加入房间成功  
     socket.on('room-joined', (data: { roomId: string, isHost: boolean }) => {
+      // 生成并设置随机昵称
+      const nickname = generateRandomNickname()
+      setMyNickname(nickname)
+      
+      // 发送昵称到服务器
+      socket.emit('set-nickname', { roomId: data.roomId, nickname })
+      
       setRoomInfo(data.roomId, data.isHost)
       setUserRole('player')
       onJoinRoom()
@@ -50,6 +64,13 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
     
     // 以观众身份加入成功
     socket.on('spectator-joined', (data: { roomId: string, isHost: boolean }) => {
+      // 观众也生成昵称
+      const nickname = generateRandomNickname()
+      setMyNickname(nickname)
+      
+      // 发送昵称到服务器
+      socket.emit('set-nickname', { roomId: data.roomId, nickname })
+      
       setRoomInfo(data.roomId, false)
       setUserRole('spectator')
       onJoinRoom()
@@ -72,7 +93,7 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
       socket.off('spectator-joined')
       socket.off('room-error')
     }
-  }, [socket, onJoinRoom, setRoomInfo, setUserRole])
+  }, [socket, onJoinRoom, setRoomInfo, setUserRole, generateRandomNickname, setMyNickname])
 
   const handleCreateRoom = () => {
     if (!socket || !connected) {

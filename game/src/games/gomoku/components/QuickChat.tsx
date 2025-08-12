@@ -24,22 +24,26 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
   
   // 快捷短语列表
   const phrases = [
-    '你好！',
-    '承让了！',
-    '精彩！',
-    '厉害！',
-    '再来一局？',
-    '我要认真了！',
-    '运气不错',
-    '失误了',
-    '让我想想',
-    '这步棋妙',
-    '你真厉害',
-    '加油！',
-    '我输了',
-    '我赢了',
-    '谢谢对局',
-    'GG'
+    '你好呀！一起来玩吧～',
+    '承让承让，侥幸而已！',
+    '哇，这步棋真是绝了！',
+    '厉害厉害，我要认真了！',
+    '再来一局，刚才手滑了～',
+    '让你见识见识什么叫高手！',
+    '我等到花儿都谢了...',
+    '快点啊，我等到天都黑了',
+    '容我想想，这步很关键',
+    '这一步妙啊，学到了！',
+    '你是高手，我甘拜下风',
+    '加油加油，你可以的！',
+    '哎呀，失误了失误了',
+    '看我的绝杀！',
+    '友谊第一，比赛第二～',
+    'GG，精彩的对局！',
+    '别走，决战到天亮！',
+    '你这是在针对我吗？',
+    '稳住，我们能赢！',
+    '今天手感不太好啊...'
   ]
   
   const handleSend = (content: string) => {
@@ -90,15 +94,15 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
                 // PC端定位
                 "sm:absolute sm:bottom-full sm:mb-2 sm:left-1/2 sm:transform sm:-translate-x-1/2",
                 // 移动端固定在屏幕中央
-                "fixed inset-x-0 bottom-0 sm:inset-auto",
+                "fixed sm:inset-auto",
                 "pixel-container bg-gray-900 p-3 sm:p-4"
               )}
               style={{
-                // 移动端样式
+                // 移动端样式 - 确保在屏幕正中央
                 ...(window.innerWidth < 640 ? {
                   left: '50%',
-                  bottom: '50%',
-                  transform: 'translate(-50%, 50%)',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
                   width: 'min(280px, calc(100vw - 32px))',
                   maxHeight: '300px'
                 } : {

@@ -436,8 +436,11 @@ const GomokuGame = () => {
               <div className="hidden sm:flex flex-col">
                 {/* 顶部标题栏 - 极简高度 */}
                 <div className="text-center py-0.5">
-                  <h1 className="text-base font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                  <h1 className="text-base font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent inline-flex items-center gap-2">
                     五子棋对战
+                    {userRole === 'spectator' && (
+                      <span className="text-sm font-normal text-yellow-400">（观战模式）</span>
+                    )}
                   </h1>
                   <p className="text-gray-300 text-xs">
                     房间: <span className="text-yellow-400 font-pixel">{roomId}</span>
@@ -533,7 +536,7 @@ const GomokuGame = () => {
                 {/* 游戏标题 - 最小化 */}
                 <div className="text-center py-0.5">
                   <h1 className="text-xs font-game font-bold text-yellow-400">
-                    五子棋 - {roomId}
+                    五子棋{userRole === 'spectator' && '(观战)'} - {roomId}
                   </h1>
                 </div>
 
