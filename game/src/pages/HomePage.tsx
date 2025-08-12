@@ -64,6 +64,7 @@ const HomePage = () => {
   const [selectedTag, setSelectedTag] = useState('全部')
   const [onlineUsers, setOnlineUsers] = useState(0)
   const [isConnected, setIsConnected] = useState(false)
+  const [hasRealData, setHasRealData] = useState(false) // 追踪是否已获取真实数据
   
   // 筛选标签列表
   const tags = ['全部', '双人', '单人', '策略', '休闲', '益智']
@@ -94,18 +95,20 @@ const HomePage = () => {
       newSocket.on('online-count', (data: { count: number }) => {
         console.log('收到在线人数:', data.count)
         setOnlineUsers(data.count || 0)
+        setHasRealData(true) // 标记已获取真实数据
       })
       
       newSocket.on('user-count-update', (data: { count: number }) => {
         console.log('在线人数更新:', data.count)
         setOnlineUsers(data.count || 0)
+        setHasRealData(true) // 标记已获取真实数据
       })
       
       newSocket.on('connect_error', (error: Error) => {
         console.error('Socket.IO连接错误:', error.message)
         setIsConnected(false)
-        // 如果没有服务器连接，显示模拟数据
-        if (!onlineUsers) {
+        // 只有在从未获取过真实数据时才显示模拟数据
+        if (!hasRealData) {
           setOnlineUsers(Math.floor(Math.random() * 50) + 10)
         }
       })
@@ -123,10 +126,12 @@ const HomePage = () => {
       }
     } catch (error) {
       console.error('创建Socket.IO连接失败:', error)
-      // 显示模拟数据
-      setOnlineUsers(Math.floor(Math.random() * 50) + 10)
+      // 只有在从未获取过真实数据时才显示模拟数据
+      if (!hasRealData) {
+        setOnlineUsers(Math.floor(Math.random() * 50) + 10)
+      }
     }
-  }, [])
+  }, []) // 不需要添加hasRealData作为依赖，避免重复连接
   
   // 根据选中的标签筛选游戏
   const filteredGames = useMemo(() => {
