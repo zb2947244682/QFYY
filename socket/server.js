@@ -29,6 +29,53 @@ const io = socketIO(server, {
 });
 
 /**
+ * 创建独立的namespace用于首页在线人数统计
+ * 这个namespace只负责统计访问首页的用户数量，不包括游戏内的连接
+ */
+const statsNamespace = io.of('/stats');
+let homePageUsers = 0; // 首页在线用户计数
+
+// 首页统计namespace的连接处理
+statsNamespace.on('connection', (socket) => {
+    console.log(`[Stats] 新用户连接到首页: ${socket.id}`);
+    
+    // 增加首页在线人数
+    homePageUsers++;
+    console.log(`[Stats] 当前首页在线人数: ${homePageUsers}`);
+    
+    // 发送当前在线人数给新连接的用户
+    socket.emit('online-count', { count: homePageUsers });
+    
+    // 广播更新后的在线人数给所有连接的用户
+    statsNamespace.emit('user-count-update', { count: homePageUsers });
+    
+    // 处理获取在线人数请求
+    socket.on('get-online-count', () => {
+        console.log(`[Stats] 用户 ${socket.id} 请求在线人数`);
+        socket.emit('online-count', { count: homePageUsers });
+    });
+    
+    // 处理断开连接
+    socket.on('disconnect', (reason) => {
+        console.log(`[Stats] 用户断开首页连接: ${socket.id}, 原因: ${reason}`);
+        
+        // 减少首页在线人数
+        homePageUsers--;
+        if (homePageUsers < 0) homePageUsers = 0; // 防止负数
+        
+        console.log(`[Stats] 当前首页在线人数: ${homePageUsers}`);
+        
+        // 广播更新后的在线人数
+        statsNamespace.emit('user-count-update', { count: homePageUsers });
+    });
+    
+    // 处理错误
+    socket.on('error', (error) => {
+        console.error(`[Stats] Socket错误: ${error}`);
+    });
+});
+
+/**
  * 房间管理类
  * 负责游戏房间的创建、加入、离开等操作
  */
@@ -348,28 +395,30 @@ class RoomManager {
 // 创建房间管理器实例
 const roomManager = new RoomManager();
 
-// 在线用户计数
-let onlineUsersCount = 0;
+// 游戏玩家计数（仅用于游戏内统计，不影响首页显示）
+let gamePlayersCount = 0;
 
 /**
- * Socket.IO连接处理
+ * 游戏默认namespace的Socket.IO连接处理
+ * 用于处理五子棋等游戏的连接
  */
 io.on('connection', (socket) => {
-    console.log(`客户端连接: ${socket.id}`);
+    console.log(`[Game] 游戏客户端连接: ${socket.id}`);
     
-    // 增加在线人数
-    onlineUsersCount++;
-    console.log(`当前在线人数: ${onlineUsersCount}`);
+    // 增加游戏玩家数
+    gamePlayersCount++;
+    console.log(`[Game] 当前游戏玩家数: ${gamePlayersCount}`);
     
-    // 广播在线人数更新
-    io.emit('user-count-update', { count: onlineUsersCount });
+    // 不再广播给首页，仅用于游戏内部统计
+    // io.emit('user-count-update', { count: gamePlayersCount });
     
     /**
-     * 获取在线人数事件处理
+     * 游戏内获取在线人数事件处理（已废弃，改用stats namespace）
+     * 保留此事件处理以兼容旧版本，但不再使用
      */
     socket.on('get-online-count', () => {
-        console.log(`客户端 ${socket.id} 请求在线人数`);
-        socket.emit('online-count', { count: onlineUsersCount });
+        console.log(`[Game] 警告：游戏客户端 ${socket.id} 使用了废弃的get-online-count事件`);
+        // 不再响应此事件，首页应该使用stats namespace
     });
     
     /**
@@ -854,14 +903,15 @@ io.on('connection', (socket) => {
      * 断开连接事件处理
      */
     socket.on('disconnect', () => {
-        console.log(`客户端断开连接: ${socket.id}`);
+        console.log(`[Game] 游戏客户端断开连接: ${socket.id}`);
         
-        // 减少在线人数
-        onlineUsersCount--;
-        console.log(`当前在线人数: ${onlineUsersCount}`);
+        // 减少游戏玩家数
+        gamePlayersCount--;
+        if (gamePlayersCount < 0) gamePlayersCount = 0;
+        console.log(`[Game] 当前游戏玩家数: ${gamePlayersCount}`);
         
-        // 广播在线人数更新
-        io.emit('user-count-update', { count: onlineUsersCount });
+        // 不再广播给首页
+        // io.emit('user-count-update', { count: gamePlayersCount });
         
         const room = roomManager.leaveRoom(socket.id);
         
