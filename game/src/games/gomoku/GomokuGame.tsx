@@ -317,7 +317,7 @@ const GomokuGame = () => {
   }
 
   /**
-   * 处理认输（转到观众席）
+   * 处理认输
    */
   const handleSurrender = () => {
     if (gameState !== 'playing' || userRole !== 'player') {
@@ -330,12 +330,13 @@ const GomokuGame = () => {
   }
   
   /**
-   * 确认认输（移到观众席）
+   * 确认认输
    */
   const handleConfirmSurrender = () => {
-    // 玩家转为观众（相当于认输）
+    // 玩家认输，转为观众
     playerToSpectator()
     setShowSurrenderConfirm(false)
+    addNotification('info', '🏳️ 你已认输')
   }
   
   /**
@@ -401,10 +402,10 @@ const GomokuGame = () => {
       {/* 认输确认对话框 */}
       <ConfirmDialog
         isOpen={showSurrenderConfirm}
-        title="到观众席确认"
-        message="确定要到观众席吗？这相当于认输，游戏将结束。"
-        confirmText="确认"
-        cancelText="取消"
+        title="认输确认"
+        message="确定要认输吗？游戏将结束，对手获胜。"
+        confirmText="确认认输"
+        cancelText="继续游戏"
         onConfirm={handleConfirmSurrender}
         onCancel={handleCancelSurrender}
       />
@@ -491,11 +492,11 @@ const GomokuGame = () => {
                             onClick={handleSurrender}
                             disabled={gameState !== 'playing'}
                             className={clsx(
-                              "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs px-2.5 py-1 transition-all",
-                              gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
+                              "pixel-btn bg-orange-600 hover:bg-orange-700 text-xs px-2.5 py-1 transition-all",
+                              gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-orange-600"
                             )}
                           >
-                            到观众席
+                            认输
                           </button>
                         </>
                       ) : userRole === 'spectator' ? (
@@ -582,11 +583,11 @@ const GomokuGame = () => {
                           onClick={handleSurrender}
                           disabled={gameState !== 'playing'}
                           className={clsx(
-                            "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-[8px] px-1.5 py-0.5 transition-all",
-                            gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
+                            "pixel-btn bg-orange-600 hover:bg-orange-700 text-[8px] px-1.5 py-0.5 transition-all",
+                            gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-orange-600"
                           )}
                         >
-                          观众席
+                          认输
                         </button>
                       </>
                     ) : userRole === 'spectator' ? (
