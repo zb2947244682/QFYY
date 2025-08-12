@@ -453,13 +453,13 @@ const GomokuGame = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="flex-1 flex flex-col h-full"
+              className="flex-1 flex flex-col"
             >
-              {/* PC端布局 - 紧凑布局减少空间浪费 */}
-              <div className="hidden sm:flex flex-1 flex-col h-full">
-                {/* 顶部标题栏 - 大幅压缩高度 */}
-                <div className="text-center py-1 flex-shrink-0">
-                  <h1 className="text-xl font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+              {/* PC端布局 - 紧凑布局 */}
+              <div className="hidden sm:flex flex-1 flex-col">
+                {/* 顶部标题栏 */}
+                <div className="text-center py-1">
+                  <h1 className="text-lg font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
                     五子棋对战
                   </h1>
                   <p className="text-gray-300 text-xs">
@@ -467,132 +467,134 @@ const GomokuGame = () => {
                   </p>
                 </div>
                 
-                {/* 主游戏区域 - 使用flex-1占据剩余空间 */}
-                <div className="flex-1 flex items-start justify-center px-4 pt-2 overflow-hidden">
+                {/* 主游戏区域 - 三栏布局，居中显示 */}
+                <div className="flex-1 flex items-center justify-center px-4">
                   {/* 左侧信息栏 */}
-                  <div className="flex-shrink-0 pt-4">
+                  <div className="flex-shrink-0">
                     <GameStatus side="left" />
                   </div>
                   
-                  {/* 中央棋盘 - 添加左右margin */}
-                  <div className="mx-4">
+                  {/* 中央棋盘和按钮 */}
+                  <div className="mx-4 flex flex-col items-center">
+                    {/* 棋盘 */}
                     <GameBoard />
+                    
+                    {/* 控制按钮 - 紧贴棋盘下方 */}
+                    <div className="flex justify-center gap-2 mt-2">
+                      <button
+                        onClick={handleRestart}
+                        disabled={pendingRestart || waitingForOpponentRestart}
+                        className={clsx(
+                          "pixel-btn text-xs px-3 py-1.5 transition-all",
+                          (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        {waitingForOpponentRestart ? '等待对手...' : pendingRestart ? '等待确认...' : '重新开始'}
+                      </button>
+                      
+                      <button
+                        onClick={handleUndo}
+                        disabled={isUndoDisabled}
+                        className={clsx(
+                          "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs px-3 py-1.5 transition-all",
+                          isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
+                        )}
+                      >
+                        {pendingUndo ? '等待确认...' : '悔棋'}
+                      </button>
+                      
+                      <QuickChat onSendMessage={handleSendMessage} />
+                      
+                      <button
+                        onClick={handleSurrender}
+                        disabled={gameState !== 'playing'}
+                        className={clsx(
+                          "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs px-3 py-1.5 transition-all",
+                          gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
+                        )}
+                      >
+                        认输
+                      </button>
+                      
+                      <button
+                        onClick={handleLeaveRoom}
+                        className="pixel-btn bg-red-600 hover:bg-red-700 text-xs px-3 py-1.5 transition-all"
+                      >
+                        离开房间
+                      </button>
+                    </div>
                   </div>
                   
                   {/* 右侧信息栏 */}
-                  <div className="flex-shrink-0 pt-4">
+                  <div className="flex-shrink-0">
                     <GameStatus side="right" />
                   </div>
                 </div>
-                
-                {/* 底部控制按钮 - 固定在底部 */}
-                <div className="flex-shrink-0 flex justify-center gap-2 py-2 bg-gray-900/50 backdrop-blur-sm">
-                  <button
-                    onClick={handleRestart}
-                    disabled={pendingRestart || waitingForOpponentRestart}
-                    className={clsx(
-                      "pixel-btn text-xs px-3 py-1.5 transition-all",
-                      (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    {waitingForOpponentRestart ? '等待对手...' : pendingRestart ? '等待确认...' : '重新开始'}
-                  </button>
-                  
-                  <button
-                    onClick={handleUndo}
-                    disabled={isUndoDisabled}
-                    className={clsx(
-                      "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs px-3 py-1.5 transition-all",
-                      isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
-                    )}
-                  >
-                    {pendingUndo ? '等待确认...' : '悔棋'}
-                  </button>
-                  
-                  <QuickChat onSendMessage={handleSendMessage} />
-                  
-                  <button
-                    onClick={handleSurrender}
-                    disabled={gameState !== 'playing'}
-                    className={clsx(
-                      "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs px-3 py-1.5 transition-all",
-                      gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
-                    )}
-                  >
-                    认输
-                  </button>
-                  
-                  <button
-                    onClick={handleLeaveRoom}
-                    className="pixel-btn bg-red-600 hover:bg-red-700 text-xs px-3 py-1.5 transition-all"
-                  >
-                    离开房间
-                  </button>
-                </div>
               </div>
 
-              {/* 移动端布局 - 极致紧凑布局 */}
-              <div className="sm:hidden flex-1 flex flex-col h-full">
-                {/* 游戏标题 - 移动端最小化 */}
-                <div className="text-center py-0.5 flex-shrink-0">
-                  <h1 className="text-sm font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+              {/* 移动端布局 - 紧凑布局 */}
+              <div className="sm:hidden flex-1 flex flex-col">
+                {/* 游戏标题 */}
+                <div className="text-center py-0.5">
+                  <h1 className="text-xs font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
                     五子棋 - {roomId}
                   </h1>
                 </div>
 
-                {/* 游戏状态栏 - 使用更紧凑的样式 */}
-                <div className="px-1 flex-shrink-0">
+                {/* 游戏状态栏 */}
+                <div className="px-1">
                   <GameStatus />
                 </div>
 
-                {/* 游戏棋盘 - 占据剩余空间 */}
-                <div className="flex-1 flex items-start justify-center pt-1 overflow-hidden">
+                {/* 游戏内容区 - 居中显示 */}
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  {/* 游戏棋盘 */}
                   <GameBoard />
-                </div>
-
-                {/* 控制按钮 - 固定在底部 */}
-                <div className="flex-shrink-0 flex flex-wrap justify-center gap-1 py-1 px-1 bg-gray-900/50 backdrop-blur-sm">
-                  <button
-                    onClick={handleRestart}
-                    disabled={pendingRestart || waitingForOpponentRestart}
-                    className={clsx(
-                      "pixel-btn text-[9px] px-2 py-0.5 transition-all",
-                      (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    {waitingForOpponentRestart || pendingRestart ? '等待...' : '重开'}
-                  </button>
                   
-                  <button
-                    onClick={handleUndo}
-                    disabled={isUndoDisabled}
-                    className={clsx(
-                      "pixel-btn bg-blue-600 hover:bg-blue-700 text-[9px] px-2 py-0.5 transition-all",
-                      isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
-                    )}
-                  >
-                    {pendingUndo ? '等待...' : '悔棋'}
-                  </button>
-                  
-                  <QuickChat onSendMessage={handleSendMessage} className="text-[9px] px-2 py-0.5" />
-                  
-                  <button
-                    onClick={handleSurrender}
-                    disabled={gameState !== 'playing'}
-                    className={clsx(
-                      "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-[9px] px-2 py-0.5 transition-all",
-                      gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
-                    )}
-                  >
-                    认输
-                  </button>
-                  
-                  <button
-                    onClick={handleLeaveRoom}
-                    className="pixel-btn bg-red-600 hover:bg-red-700 text-[9px] px-2 py-0.5 transition-all"
-                  >
-                    离开
-                  </button>
+                  {/* 控制按钮 - 紧贴棋盘下方 */}
+                  <div className="flex flex-wrap justify-center gap-1 mt-1 px-1">
+                    <button
+                      onClick={handleRestart}
+                      disabled={pendingRestart || waitingForOpponentRestart}
+                      className={clsx(
+                        "pixel-btn text-[9px] px-2 py-0.5 transition-all",
+                        (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      {waitingForOpponentRestart || pendingRestart ? '等待...' : '重开'}
+                    </button>
+                    
+                    <button
+                      onClick={handleUndo}
+                      disabled={isUndoDisabled}
+                      className={clsx(
+                        "pixel-btn bg-blue-600 hover:bg-blue-700 text-[9px] px-2 py-0.5 transition-all",
+                        isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
+                      )}
+                    >
+                      {pendingUndo ? '等待...' : '悔棋'}
+                    </button>
+                    
+                    <QuickChat onSendMessage={handleSendMessage} className="text-[9px] px-2 py-0.5" />
+                    
+                    <button
+                      onClick={handleSurrender}
+                      disabled={gameState !== 'playing'}
+                      className={clsx(
+                        "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-[9px] px-2 py-0.5 transition-all",
+                        gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
+                      )}
+                    >
+                      认输
+                    </button>
+                    
+                    <button
+                      onClick={handleLeaveRoom}
+                      className="pixel-btn bg-red-600 hover:bg-red-700 text-[9px] px-2 py-0.5 transition-all"
+                    >
+                      离开
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
