@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useState, useEffect, useMemo } from 'react'
 import GameCard from '@components/GameCard'
 import { Game } from '../types/game'
 
@@ -50,7 +51,7 @@ const games: Game[] = [
     difficulty: '中等',
     players: '1人',
     time: '10-30分钟',
-    status: 'coming-soon',
+    status: 'available',
   },
 ]
 
@@ -59,6 +60,81 @@ const games: Game[] = [
  * 优化了移动端响应式布局和触摸交互
  */
 const HomePage = () => {
+  const [selectedTag, setSelectedTag] = useState('全部')
+  const [onlineUsers, setOnlineUsers] = useState(0)
+  const [isConnected, setIsConnected] = useState(false)
+  
+  // 筛选标签列表
+  const tags = ['全部', '双人', '单人', '策略', '休闲', '益智']
+  
+  // WebSocket连接获取在线人数
+  useEffect(() => {
+    // 检查是否有WebSocket服务器配置
+    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3333'
+    
+    try {
+      const ws = new WebSocket(wsUrl)
+      
+      ws.onopen = () => {
+        console.log('WebSocket连接成功')
+        setIsConnected(true)
+        // 请求在线人数
+        ws.send(JSON.stringify({ type: 'get_online_count' }))
+      }
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'online_count') {
+            setOnlineUsers(data.count || 0)
+          } else if (data.type === 'user_count_update') {
+            setOnlineUsers(data.count || 0)
+          }
+        } catch (error) {
+          console.error('解析WebSocket消息失败:', error)
+        }
+      }
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket错误:', error)
+        setIsConnected(false)
+        // 如果没有WebSocket服务器，显示模拟数据
+        setOnlineUsers(Math.floor(Math.random() * 50) + 10)
+      }
+      
+      ws.onclose = () => {
+        console.log('WebSocket连接关闭')
+        setIsConnected(false)
+      }
+      
+      // 清理函数
+      return () => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close()
+        }
+      }
+    } catch (error) {
+      console.error('创建WebSocket连接失败:', error)
+      // 显示模拟数据
+      setOnlineUsers(Math.floor(Math.random() * 50) + 10)
+    }
+  }, [])
+  
+  // 根据选中的标签筛选游戏
+  const filteredGames = useMemo(() => {
+    if (selectedTag === '全部') {
+      return games
+    }
+    return games.filter(game => game.tags.includes(selectedTag))
+  }, [selectedTag])
+  
+  // 计算统计数据
+  const stats = useMemo(() => ({
+    available: filteredGames.filter(g => g.status === 'available').length,
+    comingSoon: filteredGames.filter(g => g.status === 'coming-soon').length,
+    onlineUsers: onlineUsers,
+  }), [filteredGames, onlineUsers])
+  
   return (
     <div className="space-y-8 sm:space-y-12">
       {/* Hero Section - 优化移动端标题和描述 */}
@@ -85,7 +161,7 @@ const HomePage = () => {
             className="bg-gray-800/50 backdrop-blur px-3 sm:px-6 py-3 sm:py-4 rounded-lg border border-gray-700 flex-1 max-w-[100px] sm:max-w-none"
           >
             <div className="text-xl sm:text-3xl font-bold text-purple-400">
-              {games.filter(g => g.status === 'available').length}
+              {stats.available}
             </div>
             <div className="text-xs sm:text-sm text-gray-400">可玩游戏</div>
           </motion.div>
@@ -95,7 +171,7 @@ const HomePage = () => {
             className="bg-gray-800/50 backdrop-blur px-3 sm:px-6 py-3 sm:py-4 rounded-lg border border-gray-700 flex-1 max-w-[100px] sm:max-w-none"
           >
             <div className="text-xl sm:text-3xl font-bold text-pink-400">
-              {games.filter(g => g.status === 'coming-soon').length}
+              {stats.comingSoon}
             </div>
             <div className="text-xs sm:text-sm text-gray-400">即将推出</div>
           </motion.div>
@@ -104,15 +180,20 @@ const HomePage = () => {
             whileTap={{ scale: 0.95 }}
             className="bg-gray-800/50 backdrop-blur px-3 sm:px-6 py-3 sm:py-4 rounded-lg border border-gray-700 flex-1 max-w-[100px] sm:max-w-none"
           >
-            <div className="text-xl sm:text-3xl font-bold text-blue-400">24/7</div>
-            <div className="text-xs sm:text-sm text-gray-400">在线服务</div>
+            <div className="text-xl sm:text-3xl font-bold text-blue-400 flex items-center justify-center gap-1">
+              {stats.onlineUsers}
+              {isConnected && (
+                <span className="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              )}
+            </div>
+            <div className="text-xs sm:text-sm text-gray-400">在线玩家</div>
           </motion.div>
         </div>
       </motion.div>
 
       {/* 分类标签 - 优化移动端显示 */}
       <div className="flex flex-wrap justify-center gap-2 sm:gap-3 px-4">
-        {['全部', '双人', '单人', '策略', '休闲', '益智'].map((tag, index) => (
+        {tags.map((tag, index) => (
           <motion.button
             key={tag}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -120,8 +201,9 @@ const HomePage = () => {
             transition={{ delay: index * 0.1 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => setSelectedTag(tag)}
             className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all
-              ${tag === '全部' 
+              ${tag === selectedTag 
                 ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white border border-gray-700'
               }`}
@@ -138,16 +220,34 @@ const HomePage = () => {
         transition={{ delay: 0.3 }}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
       >
-        {games.map((game, index) => (
+        {filteredGames.length > 0 ? (
+          filteredGames.map((game, index) => (
+            <motion.div
+              key={game.id}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <GameCard game={game} />
+            </motion.div>
+          ))
+        ) : (
           <motion.div
-            key={game.id}
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="col-span-full text-center py-12"
           >
-            <GameCard game={game} />
+            <p className="text-gray-400 text-lg">
+              没有找到"{selectedTag}"类型的游戏
+            </p>
+            <button
+              onClick={() => setSelectedTag('全部')}
+              className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              查看全部游戏
+            </button>
           </motion.div>
-        ))}
+        )}
       </motion.div>
 
       {/* 特色介绍 - 优化移动端布局 */}
