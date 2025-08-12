@@ -26,30 +26,30 @@ const GameStatus = ({ side }: GameStatusProps) => {
   if (side === 'left') {
     // 左侧显示我的信息
     return (
-      <div className="pixel-container bg-gradient-to-b from-gray-800/50 to-gray-900/50 p-4 w-full">
-        <div className="flex flex-col items-center gap-3">
-          <div className="text-sm font-bold text-white bg-green-600/20 px-3 py-1 rounded">
+      <div className="pixel-container bg-gradient-to-b from-gray-800/50 to-gray-900/50 p-3 w-48">
+        <div className="flex flex-col items-center gap-2">
+          <div className="text-xs font-bold text-white bg-green-600/20 px-2 py-0.5 rounded">
             你的棋子
           </div>
           
           <PlayerAvatar 
             color={myColor} 
-            size="large" 
+            size="medium" 
             isActive={gameState === 'playing' && currentPlayer === myColor}
           />
           
-          <div className="flex items-center gap-2">
-            <div className={`w-6 h-6 rounded-full shadow-lg ${
+          <div className="flex items-center gap-1.5">
+            <div className={`w-5 h-5 rounded-full shadow-lg ${
               myColor === 1 ? 'bg-gradient-to-br from-gray-800 to-black' :
               myColor === 2 ? 'bg-gradient-to-br from-white to-gray-200 border border-gray-400' :
               'bg-gray-600'
             }`} />
-            <span className="text-xl font-game text-white">
+            <span className="text-lg font-game text-white">
               {myColor === 1 ? '黑棋' : myColor === 2 ? '白棋' : '未定'}
             </span>
           </div>
           
-          <div className="text-lg text-gray-300">
+          <div className="text-sm text-gray-300">
             得分: <span className="text-yellow-400 font-bold">
               {myColor === 1 ? score.black : myColor === 2 ? score.white : 0}
             </span>
@@ -57,7 +57,7 @@ const GameStatus = ({ side }: GameStatusProps) => {
           
           {gameState === 'playing' && currentPlayer === myColor && (
             <motion.div 
-              className="text-green-400 font-pixel bg-green-400/10 px-3 py-1 rounded animate-pulse"
+              className="text-green-400 font-pixel text-xs bg-green-400/10 px-2 py-0.5 rounded animate-pulse"
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ repeat: Infinity, duration: 1.5 }}
             >
@@ -72,43 +72,43 @@ const GameStatus = ({ side }: GameStatusProps) => {
   if (side === 'right') {
     // 右侧显示对手信息和游戏状态
     return (
-      <div className="pixel-container bg-gradient-to-b from-gray-800/50 to-gray-900/50 p-4 w-full">
-        <div className="flex flex-col items-center gap-3">
-          <div className="text-sm text-gray-400">
+      <div className="pixel-container bg-gradient-to-b from-gray-800/50 to-gray-900/50 p-3 w-48">
+        <div className="flex flex-col items-center gap-2">
+          <div className="text-xs text-gray-400">
             对手棋子
           </div>
           
           <PlayerAvatar 
             color={opponentColor} 
-            size="large"
+            size="medium"
             isActive={gameState === 'playing' && currentPlayer !== myColor && currentPlayer !== null}
           />
           
-          <div className="flex items-center gap-2">
-            <div className={`w-6 h-6 rounded-full shadow-lg ${
+          <div className="flex items-center gap-1.5">
+            <div className={`w-5 h-5 rounded-full shadow-lg ${
               opponentColor === 1 ? 'bg-gradient-to-br from-gray-800 to-black' :
               opponentColor === 2 ? 'bg-gradient-to-br from-white to-gray-200 border border-gray-400' :
               'bg-gray-600'
             }`} />
-            <span className="text-xl font-game text-white">
+            <span className="text-lg font-game text-white">
               {opponentColor === 1 ? '黑棋' : opponentColor === 2 ? '白棋' : '未定'}
             </span>
           </div>
           
-          <div className="text-lg text-gray-300">
+          <div className="text-sm text-gray-300">
             得分: <span className="text-yellow-400 font-bold">
               {opponentColor === 1 ? score.black : opponentColor === 2 ? score.white : 0}
             </span>
           </div>
           
           {/* 游戏状态 */}
-          <div className="text-gray-400 font-game bg-gray-800/50 px-3 py-1 rounded text-sm">
+          <div className="text-gray-400 font-game bg-gray-800/50 px-2 py-0.5 rounded text-xs">
             第 {roundNumber} 回合
           </div>
           
           {gameState === 'waiting' && (
             <motion.span 
-              className="text-yellow-400 font-pixel bg-yellow-400/10 px-3 py-1 rounded animate-pulse"
+              className="text-yellow-400 font-pixel text-xs bg-yellow-400/10 px-2 py-0.5 rounded animate-pulse"
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ repeat: Infinity, duration: 2 }}
             >
@@ -117,14 +117,14 @@ const GameStatus = ({ side }: GameStatusProps) => {
           )}
           
           {gameState === 'playing' && currentPlayer !== myColor && (
-            <span className="text-blue-400 font-pixel bg-blue-400/10 px-3 py-1 rounded">
+            <span className="text-blue-400 font-pixel text-xs bg-blue-400/10 px-2 py-0.5 rounded">
               对手思考中...
             </span>
           )}
           
           {gameState === 'finished' && (
             <motion.span 
-              className={`font-pixel px-3 py-1 rounded ${
+              className={`font-pixel text-xs px-2 py-0.5 rounded ${
                 winner === myColor 
                   ? 'text-yellow-400 bg-yellow-400/10 animate-glow' 
                   : 'text-gray-400 bg-gray-400/10'

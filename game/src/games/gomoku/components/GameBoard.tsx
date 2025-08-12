@@ -53,11 +53,11 @@ const GameBoard = () => {
       const isMobile = vw < 640
       
       if (isMobile) {
-        // 移动端：确保棋盘居中且适配小屏幕（最小375x667）
-        const headerHeight = 35  // 顶部标题高度（减小）
-        const statusHeight = 40  // 状态栏高度（减小）
-        const buttonHeight = 50  // 底部按钮高度（减小）
-        const padding = 12       // 边距（减小）
+        // 移动端：优化布局确保一屏显示
+        const headerHeight = 25  // 顶部标题高度（最小化）
+        const statusHeight = 35  // 状态栏高度（优化后）
+        const buttonHeight = 35  // 底部按钮高度（最小化）
+        const padding = 8        // 边距（最小化）
         
         // 计算可用的宽度和高度
         const availableWidth = vw - padding * 2
@@ -66,7 +66,6 @@ const GameBoard = () => {
         // 取较小值确保棋盘完整显示
         const maxSize = Math.min(availableWidth, availableHeight)
         
-        // 移动端最小375x667，确保棋盘能完整显示
         // 对于非常小的屏幕，进一步缩小棋盘
         const targetSize = Math.min(maxSize, vw - padding * 2)
         
@@ -86,19 +85,23 @@ const GameBoard = () => {
           board: newBoardSize
         })
       } else {
-        // PC端：适配720P及以上分辨率
-        const headerHeight = 50   // 顶部标题高度
-        const buttonHeight = 60   // 底部按钮高度
-        const padding = 40        // 边距
+        // PC端：优化布局利用更多空间
+        const headerHeight = 40   // 顶部标题高度（优化后）
+        const buttonHeight = 50   // 底部按钮高度（优化后）
+        const padding = 20        // 边距（减小）
         
-        // 计算可用的高度（确保在720P下完整显示）
+        // 计算可用的高度
         const availableHeight = vh - headerHeight - buttonHeight - padding * 2
         
-        // PC端棋盘尺寸限制
-        const maxSize = Math.min(600, availableHeight)  // 最大600px，或可用高度
+        // PC端棋盘尺寸限制 - 增加最大尺寸以充分利用空间
+        const maxSize = Math.min(650, availableHeight * 0.9)  // 增加到650px，使用90%可用高度
         
-        // 根据高度计算合适的棋盘尺寸
-        const targetSize = Math.min(maxSize, availableHeight)
+        // 考虑左右信息栏的宽度
+        const sidebarWidth = 220 * 2  // 左右各220px
+        const availableWidth = vw - sidebarWidth - padding * 2
+        
+        // 根据高度和宽度计算合适的棋盘尺寸
+        const targetSize = Math.min(maxSize, availableHeight * 0.9, availableWidth)
         
         // 计算单元格大小
         const newCellSize = Math.floor(targetSize / boardSize)
@@ -111,6 +114,7 @@ const GameBoard = () => {
         console.log('PC board size:', {
           viewport: { width: vw, height: vh },
           availableHeight,
+          availableWidth,
           target: targetSize,
           cell: newCellSize,
           board: newBoardSize
