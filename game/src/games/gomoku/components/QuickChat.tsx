@@ -74,12 +74,12 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* 背景遮罩 */}
+            {/* 背景遮罩 - 增加不透明度避免看到背后内容 */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/30 z-40 sm:hidden"
+              className="fixed inset-0 bg-black/70 z-40 sm:hidden"
               onClick={() => setIsOpen(false)}
             />
             
@@ -95,7 +95,7 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
                 "sm:absolute sm:bottom-full sm:mb-2 sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:w-80",
                 // 移动端固定在屏幕中央
                 "fixed inset-x-4 top-1/2 -translate-y-1/2 sm:inset-auto sm:translate-y-0",
-                "pixel-container bg-gray-900 p-3 sm:p-4",
+                "pixel-container bg-gray-900/100 backdrop-blur-sm p-3 sm:p-4",
                 "max-h-[300px] max-w-sm mx-auto"
               )}
             >
