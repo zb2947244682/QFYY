@@ -55,7 +55,7 @@ const QuickChat = ({ onSendMessage, className = '' }: QuickChatProps) => {
   // if (gameState === 'waiting') return null
   
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-flex items-center">
       {/* 快捷聊天按钮 */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
