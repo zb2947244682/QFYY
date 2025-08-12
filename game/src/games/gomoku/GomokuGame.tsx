@@ -455,37 +455,37 @@ const GomokuGame = () => {
               transition={{ duration: 0.3 }}
               className="flex-1 flex flex-col"
             >
-              {/* PC端布局 - 紧凑布局 */}
+              {/* PC端布局 - 紧凑文档流布局 */}
               <div className="hidden sm:flex flex-1 flex-col">
-                {/* 顶部标题栏 */}
-                <div className="text-center py-1">
-                  <h1 className="text-lg font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                {/* 顶部标题栏 - 极简高度 */}
+                <div className="text-center py-0.5">
+                  <h1 className="text-base font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
                     五子棋对战
                   </h1>
                   <p className="text-gray-300 text-xs">
-                    房间ID: <span className="text-yellow-400 font-pixel px-1 py-0.5 bg-yellow-400/10 rounded">{roomId}</span>
+                    房间: <span className="text-yellow-400 font-pixel">{roomId}</span>
                   </p>
                 </div>
                 
-                {/* 主游戏区域 - 三栏布局，居中显示 */}
-                <div className="flex-1 flex items-center justify-center px-4">
+                {/* 主游戏区域 - 顶部对齐文档流 */}
+                <div className="flex-1 flex justify-center px-4 pt-1">
                   {/* 左侧信息栏 */}
                   <div className="flex-shrink-0">
                     <GameStatus side="left" />
                   </div>
                   
                   {/* 中央棋盘和按钮 */}
-                  <div className="mx-4 flex flex-col items-center">
+                  <div className="mx-3 flex flex-col">
                     {/* 棋盘 */}
                     <GameBoard />
                     
-                    {/* 控制按钮 - 紧贴棋盘下方 */}
-                    <div className="flex justify-center gap-2 mt-2">
+                    {/* 控制按钮 - 紧贴棋盘 */}
+                    <div className="flex justify-center gap-1.5 mt-1">
                       <button
                         onClick={handleRestart}
                         disabled={pendingRestart || waitingForOpponentRestart}
                         className={clsx(
-                          "pixel-btn text-xs px-3 py-1.5 transition-all",
+                          "pixel-btn text-xs px-2.5 py-1 transition-all",
                           (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
                         )}
                       >
@@ -496,7 +496,7 @@ const GomokuGame = () => {
                         onClick={handleUndo}
                         disabled={isUndoDisabled}
                         className={clsx(
-                          "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs px-3 py-1.5 transition-all",
+                          "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs px-2.5 py-1 transition-all",
                           isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
                         )}
                       >
@@ -509,7 +509,7 @@ const GomokuGame = () => {
                         onClick={handleSurrender}
                         disabled={gameState !== 'playing'}
                         className={clsx(
-                          "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs px-3 py-1.5 transition-all",
+                          "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs px-2.5 py-1 transition-all",
                           gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
                         )}
                       >
@@ -518,7 +518,7 @@ const GomokuGame = () => {
                       
                       <button
                         onClick={handleLeaveRoom}
-                        className="pixel-btn bg-red-600 hover:bg-red-700 text-xs px-3 py-1.5 transition-all"
+                        className="pixel-btn bg-red-600 hover:bg-red-700 text-xs px-2.5 py-1 transition-all"
                       >
                         离开房间
                       </button>
@@ -532,56 +532,56 @@ const GomokuGame = () => {
                 </div>
               </div>
 
-              {/* 移动端布局 - 紧凑布局 */}
+              {/* 移动端布局 - 紧凑文档流 */}
               <div className="sm:hidden flex-1 flex flex-col">
-                {/* 游戏标题 */}
+                {/* 游戏标题 - 最小化 */}
                 <div className="text-center py-0.5">
-                  <h1 className="text-xs font-game font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                  <h1 className="text-xs font-game font-bold text-yellow-400">
                     五子棋 - {roomId}
                   </h1>
                 </div>
 
-                {/* 游戏状态栏 */}
+                {/* 游戏状态栏 - 紧凑 */}
                 <div className="px-1">
                   <GameStatus />
                 </div>
 
-                {/* 游戏内容区 - 居中显示 */}
-                <div className="flex-1 flex flex-col items-center justify-center">
+                {/* 游戏内容区 - 顶部对齐 */}
+                <div className="flex-1 flex flex-col items-center pt-0.5">
                   {/* 游戏棋盘 */}
                   <GameBoard />
                   
-                  {/* 控制按钮 - 紧贴棋盘下方 */}
-                  <div className="flex flex-wrap justify-center gap-1 mt-1 px-1">
+                  {/* 控制按钮 - 紧贴棋盘 */}
+                  <div className="flex flex-wrap justify-center gap-0.5 mt-0.5 px-1">
                     <button
                       onClick={handleRestart}
                       disabled={pendingRestart || waitingForOpponentRestart}
                       className={clsx(
-                        "pixel-btn text-[9px] px-2 py-0.5 transition-all",
+                        "pixel-btn text-[8px] px-1.5 py-0.5 transition-all",
                         (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
                       )}
                     >
-                      {waitingForOpponentRestart || pendingRestart ? '等待...' : '重开'}
+                      {waitingForOpponentRestart || pendingRestart ? '等待' : '重开'}
                     </button>
                     
                     <button
                       onClick={handleUndo}
                       disabled={isUndoDisabled}
                       className={clsx(
-                        "pixel-btn bg-blue-600 hover:bg-blue-700 text-[9px] px-2 py-0.5 transition-all",
+                        "pixel-btn bg-blue-600 hover:bg-blue-700 text-[8px] px-1.5 py-0.5 transition-all",
                         isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
                       )}
                     >
-                      {pendingUndo ? '等待...' : '悔棋'}
+                      {pendingUndo ? '等待' : '悔棋'}
                     </button>
                     
-                    <QuickChat onSendMessage={handleSendMessage} className="text-[9px] px-2 py-0.5" />
+                    <QuickChat onSendMessage={handleSendMessage} className="text-[8px] px-1.5 py-0.5" />
                     
                     <button
                       onClick={handleSurrender}
                       disabled={gameState !== 'playing'}
                       className={clsx(
-                        "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-[9px] px-2 py-0.5 transition-all",
+                        "pixel-btn bg-yellow-600 hover:bg-yellow-700 text-[8px] px-1.5 py-0.5 transition-all",
                         gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-yellow-600"
                       )}
                     >
@@ -590,7 +590,7 @@ const GomokuGame = () => {
                     
                     <button
                       onClick={handleLeaveRoom}
-                      className="pixel-btn bg-red-600 hover:bg-red-700 text-[9px] px-2 py-0.5 transition-all"
+                      className="pixel-btn bg-red-600 hover:bg-red-700 text-[8px] px-1.5 py-0.5 transition-all"
                     >
                       离开
                     </button>

@@ -53,21 +53,21 @@ const GameBoard = () => {
       const isMobile = vw < 640
       
       if (isMobile) {
-        // 移动端：优化布局确保一屏显示
-        const headerHeight = 20  // 顶部标题高度
-        const statusHeight = 30  // 状态栏高度
-        const buttonHeight = 30  // 按钮高度（紧贴棋盘）
-        const padding = 20       // 总边距
+        // 移动端：极致紧凑布局
+        const headerHeight = 15  // 顶部标题高度（极简）
+        const statusHeight = 25  // 状态栏高度（紧凑）
+        const buttonHeight = 25  // 按钮高度（紧贴）
+        const padding = 15       // 总边距（最小）
         
         // 计算可用的宽度和高度
         const availableWidth = vw - padding
         const availableHeight = vh - headerHeight - statusHeight - buttonHeight - padding
         
         // 取较小值确保棋盘完整显示
-        const maxSize = Math.min(availableWidth, availableHeight * 0.9)
+        const maxSize = Math.min(availableWidth, availableHeight)
         
-        // 对于非常小的屏幕，进一步缩小棋盘
-        const targetSize = Math.min(maxSize, availableWidth)
+        // 计算目标尺寸
+        const targetSize = Math.min(maxSize, availableWidth * 0.95)
         
         // 计算单元格大小
         const newCellSize = Math.floor(targetSize / boardSize)
@@ -85,23 +85,23 @@ const GameBoard = () => {
           board: newBoardSize
         })
       } else {
-        // PC端：优化布局，按钮在棋盘下方
-        const headerHeight = 35   // 顶部标题高度
-        const buttonHeight = 45   // 按钮高度（紧贴棋盘）
-        const padding = 40        // 总边距
+        // PC端：紧凑文档流布局
+        const headerHeight = 30   // 顶部标题高度（紧凑）
+        const buttonHeight = 35   // 按钮高度（紧贴）
+        const padding = 30        // 总边距
         
         // 计算可用的高度
         const availableHeight = vh - headerHeight - buttonHeight - padding
         
         // PC端棋盘尺寸限制
-        const maxSize = Math.min(550, availableHeight * 0.85)
+        const maxSize = Math.min(580, availableHeight * 0.9)
         
         // 考虑左右信息栏的宽度
-        const sidebarWidth = 200 * 2  // 左右各200px
-        const availableWidth = vw - sidebarWidth - 80  // 额外边距
+        const sidebarWidth = 180 * 2  // 左右各180px（更紧凑）
+        const availableWidth = vw - sidebarWidth - 60  // 额外边距
         
         // 根据高度和宽度计算合适的棋盘尺寸
-        const targetSize = Math.min(maxSize, availableWidth)
+        const targetSize = Math.min(maxSize, availableWidth, availableHeight * 0.9)
         
         // 计算单元格大小
         const newCellSize = Math.floor(targetSize / boardSize)
@@ -648,7 +648,7 @@ const GameBoard = () => {
     >
       <div 
         ref={containerRef}
-        className="relative pixel-container p-2 sm:p-4 bg-gradient-to-br from-amber-900/20 to-amber-800/20"
+        className="relative pixel-container p-1 sm:p-2 bg-gradient-to-br from-amber-900/20 to-amber-800/20"
         onClick={handleClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -668,7 +668,7 @@ const GameBoard = () => {
         {/* 悬停效果画布 */}
         <canvas
           ref={hoverCanvasRef}
-          className="absolute top-2 left-2 sm:top-4 sm:left-4 pointer-events-none"
+          className="absolute top-1 left-1 sm:top-2 sm:left-2 pointer-events-none"
           style={{ 
             width: `${boardPixelSize}px`,
             height: `${boardPixelSize}px`,
