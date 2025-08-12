@@ -57,6 +57,7 @@ const GomokuGame = () => {
     requestUndo,
     acceptUndo,
     rejectUndo,
+    surrender,          // 添加认输方法
     sendChatMessage,
     spectatorToPlayer,  // 添加角色转换方法
     playerToSpectator   // 添加角色转换方法
@@ -317,11 +318,11 @@ const GomokuGame = () => {
   }
 
   /**
-   * 处理认输
+   * 处理到观众席
    */
-  const handleSurrender = () => {
-    if (gameState !== 'playing' || userRole !== 'player') {
-      addNotification('warning', '⚠️ 当前不能认输')
+  const handleToSpectator = () => {
+    if (userRole !== 'player') {
+      addNotification('warning', '⚠️ 你已经是观众了')
       return
     }
     
@@ -330,21 +331,36 @@ const GomokuGame = () => {
   }
   
   /**
-   * 确认认输
+   * 确认到观众席
    */
-  const handleConfirmSurrender = () => {
-    // 玩家认输，转为观众
+  const handleConfirmToSpectator = () => {
+    // 玩家转为观众
     playerToSpectator()
     setShowSurrenderConfirm(false)
-    addNotification('info', '🏳️ 你已认输')
+    addNotification('info', '👁️ 你已转为观众')
   }
   
   /**
-   * 取消认输
+   * 取消到观众席
    */
-  const handleCancelSurrender = () => {
+  const handleCancelToSpectator = () => {
     setShowSurrenderConfirm(false)
-    addNotification('info', '💪 继续加油！')
+  }
+  
+  /**
+   * 处理认输
+   */
+  const handleSurrender = () => {
+    if (gameState !== 'playing' || userRole !== 'player') {
+      addNotification('warning', '⚠️ 当前不能认输')
+      return
+    }
+    
+    if (roomId && myColor) {
+      // 使用socket的surrender方法
+      surrender(roomId, myColor)
+      addNotification('info', '🏳️ 你已认输')
+    }
   }
 
   /**
@@ -399,15 +415,15 @@ const GomokuGame = () => {
         onCancel={handleRejectUndo}
       />
       
-      {/* 认输确认对话框 */}
+      {/* 到观众席确认对话框 */}
       <ConfirmDialog
         isOpen={showSurrenderConfirm}
-        title="认输确认"
-        message="确定要认输吗？游戏将结束，对手获胜。"
-        confirmText="确认认输"
-        cancelText="继续游戏"
-        onConfirm={handleConfirmSurrender}
-        onCancel={handleCancelSurrender}
+        title="到观众席确认"
+        message="确定要到观众席吗？你将成为观众。"
+        confirmText="确认"
+        cancelText="取消"
+        onConfirm={handleConfirmToSpectator}
+        onCancel={handleCancelToSpectator}
       />
 
       <AnimatePresence mode="wait">
@@ -492,11 +508,18 @@ const GomokuGame = () => {
                             onClick={handleSurrender}
                             disabled={gameState !== 'playing'}
                             className={clsx(
-                              "pixel-btn bg-orange-600 hover:bg-orange-700 text-xs px-2.5 py-1 transition-all",
-                              gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-orange-600"
+                              "pixel-btn bg-red-500 hover:bg-red-600 text-xs px-2.5 py-1 transition-all",
+                              gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-red-500"
                             )}
                           >
                             认输
+                          </button>
+                          
+                          <button
+                            onClick={handleToSpectator}
+                            className="pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs px-2.5 py-1 transition-all"
+                          >
+                            到观众席
                           </button>
                         </>
                       ) : userRole === 'spectator' ? (
@@ -583,11 +606,18 @@ const GomokuGame = () => {
                           onClick={handleSurrender}
                           disabled={gameState !== 'playing'}
                           className={clsx(
-                            "pixel-btn bg-orange-600 hover:bg-orange-700 text-[8px] px-1.5 py-0.5 transition-all",
-                            gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-orange-600"
+                            "pixel-btn bg-red-500 hover:bg-red-600 text-[8px] px-1.5 py-0.5 transition-all",
+                            gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-red-500"
                           )}
                         >
                           认输
+                        </button>
+                        
+                        <button
+                          onClick={handleToSpectator}
+                          className="pixel-btn bg-yellow-600 hover:bg-yellow-700 text-[8px] px-1.5 py-0.5 transition-all"
+                        >
+                          观众席
                         </button>
                       </>
                     ) : userRole === 'spectator' ? (
