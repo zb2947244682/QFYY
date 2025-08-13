@@ -90,13 +90,16 @@ const QuickChat = ({ onSendMessage, userRole = null, className = '' }: QuickChat
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
           "pixel-btn bg-purple-600 hover:bg-purple-700 text-white",
-          className || "px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm"
+          // 改进样式处理：分别处理移动端和PC端的样式
+          "px-2 py-1 sm:px-3 sm:py-2",
+          "text-[10px] sm:text-sm",
+          className  // 额外的自定义样式
         )}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
         <span className="hidden sm:inline">💬 聊天</span>
-        <span className="sm:hidden">聊天</span>
+        <span className="sm:hidden">💬</span>
       </motion.button>
       
       {/* 快捷聊天面板 */}
