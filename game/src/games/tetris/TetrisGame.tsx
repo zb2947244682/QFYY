@@ -66,8 +66,9 @@ const TetrisGame = () => {
     const saved = localStorage.getItem('tetris-high-score')
     return saved ? parseInt(saved) : 0
   })
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
-  const lastMoveRef = useRef<number>(0)
+  // 触摸控制相关状态（暂时未使用）
+  // const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
+  // const lastMoveRef = useRef<number>(0)
 
   // 生成随机方块
   const getRandomTetromino = (): TetrominoType => {
@@ -309,12 +310,12 @@ const TetrisGame = () => {
 
   // 移除触摸控制，改为使用按钮控制
 
-  // 点击旋转
-  const handleTap = () => {
-    if (isPlaying && !gameOver) {
-      rotatePiece()
-    }
-  }
+  // 点击旋转（暂时未使用）
+  // const handleTap = () => {
+  //   if (isPlaying && !gameOver) {
+  //     rotatePiece()
+  //   }
+  // }
 
   // 重置游戏
   const resetGame = () => {
@@ -328,18 +329,18 @@ const TetrisGame = () => {
     setIsPlaying(false)
   }
 
-  // 开始游戏
-  const startGame = () => {
-    if (gameOver) {
-      resetGame()
-    }
-    setIsPlaying(true)
-    if (!currentPiece) {
-      const piece = spawnPiece(nextPiece)
-      setCurrentPiece(piece)
-      setNextPiece(getRandomTetromino())
-    }
-  }
+  // 开始游戏（暂时未使用）
+  // const startGame = () => {
+  //   if (gameOver) {
+  //     resetGame()
+  //   }
+  //   setIsPlaying(true)
+  //   if (!currentPiece) {
+  //     const piece = spawnPiece(nextPiece)
+  //     setCurrentPiece(piece)
+  //     setNextPiece(getRandomTetromino())
+  //   }
+  // }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col p-2 overflow-hidden">

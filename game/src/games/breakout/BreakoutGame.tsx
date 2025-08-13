@@ -342,7 +342,6 @@ const BreakoutGame = () => {
     if (!rect) return
     
     const x = e.clientX - rect.left
-    const canvasCenter = CANVAS_WIDTH / 2
     
     // 直接移动挡板到点击位置附近
     setPaddle(prev => ({
