@@ -189,11 +189,13 @@ const Game2048 = () => {
 
   // 触摸控制
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault() // 防止页面滚动
     const touch = e.touches[0]
     setTouchStart({ x: touch.clientX, y: touch.clientY })
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault() // 防止页面滚动
     if (!touchStart) return
     
     const touch = e.changedTouches[0]
@@ -220,6 +222,10 @@ const Game2048 = () => {
     }
     
     setTouchStart(null)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault() // 防止页面滚动
   }
 
   // 重新开始游戏
@@ -286,6 +292,8 @@ const Game2048 = () => {
           className="relative bg-gray-800 p-2 rounded-lg select-none"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchMove}
+          style={{ touchAction: 'none' }} // 禁用默认的触摸行为
         >
           <div className="grid grid-cols-4 gap-2">
             {grid.map((row, i) => 

@@ -227,11 +227,19 @@ const SudokuGame = () => {
     if (typeof window !== 'undefined') {
       const screenWidth = window.innerWidth
       const screenHeight = window.innerHeight
-      // 为移动端优化，留出更多空间给控制面板
-      const maxBoardSize = Math.min(screenWidth - 40, screenHeight * 0.4, 360)
-      return Math.floor(maxBoardSize / 9)
+      const isMobile = screenWidth < 768
+      
+      if (isMobile) {
+        // 移动端优化：更小的格子，留出更多空间给控制按钮
+        const maxBoardSize = Math.min(screenWidth - 32, screenHeight * 0.35, 320)
+        return Math.floor(maxBoardSize / 9)
+      } else {
+        // 桌面端：较大的格子
+        const maxBoardSize = Math.min(screenWidth - 40, screenHeight * 0.5, 450)
+        return Math.floor(maxBoardSize / 9)
+      }
     }
-    return 36
+    return 40
   }
 
   const [cellSize, setCellSize] = useState(getCellSize())
@@ -249,45 +257,45 @@ const SudokuGame = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg mx-auto flex flex-col min-h-screen px-4 py-2"
+        className="w-full max-w-lg mx-auto flex flex-col min-h-screen px-2 py-2"
       >
         {/* 游戏头部 - 精简版 */}
-        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-3 mb-2">
-          <div className="flex items-center justify-between mb-2">
+        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-2 sm:p-3 mb-2">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
             <button
               onClick={() => navigate('/')}
-              className="p-2 text-gray-400 hover:text-white"
+              className="p-1.5 sm:p-2 text-gray-400 hover:text-white"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
             </button>
-            <h1 className="text-xl font-game font-bold text-white">数独</h1>
+            <h1 className="text-lg sm:text-xl font-game font-bold text-white">数独</h1>
             <button
               onClick={() => newGame()}
-              className="p-2 text-white"
+              className="p-1.5 sm:p-2 text-white"
             >
-              <RotateCcw size={18} />
+              <RotateCcw size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
           </div>
 
           {/* 游戏信息 - 精简 */}
-          <div className="flex justify-between text-sm">
-            <div className="flex items-center gap-4">
+          <div className="flex justify-between text-xs sm:text-sm">
+            <div className="flex items-center gap-2 sm:gap-4">
               <span className="text-gray-400">{formatTime(elapsedTime)}</span>
-              <span className="text-red-400 flex items-center gap-1">
-                <AlertCircle size={14} />
+              <span className="text-red-400 flex items-center gap-0.5 sm:gap-1">
+                <AlertCircle size={12} className="sm:w-[14px] sm:h-[14px]" />
                 {mistakes}
               </span>
-              <span className="text-yellow-400 flex items-center gap-1">
-                <Lightbulb size={14} />
+              <span className="text-yellow-400 flex items-center gap-0.5 sm:gap-1">
+                <Lightbulb size={12} className="sm:w-[14px] sm:h-[14px]" />
                 {hints}
               </span>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-0.5 sm:gap-1">
               {(['easy', 'medium', 'hard'] as Difficulty[]).map(level => (
                 <button
                   key={level}
                   onClick={() => newGame(level)}
-                  className={`px-2 py-1 rounded text-xs ${
+                  className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs ${
                     difficulty === level
                       ? 'bg-purple-600 text-white'
                       : 'bg-gray-700 text-gray-400'
@@ -301,14 +309,14 @@ const SudokuGame = () => {
         </div>
 
         {/* 游戏区域 - 调整布局以适应移动端 */}
-        <div className="flex-1 flex flex-col items-center justify-start overflow-y-auto pb-4">
+        <div className="flex-1 flex flex-col items-center justify-start">
           {/* 数独棋盘 */}
-          <div className="bg-gray-800 p-1 rounded-lg mb-3">
+          <div className="bg-gray-800 p-0.5 sm:p-1 rounded-lg mb-2 sm:mb-3">
             <div 
               className="grid grid-cols-9"
               style={{
-                width: `${cellSize * 9 + 16}px`,
-                height: `${cellSize * 9 + 16}px`,
+                width: `${cellSize * 9 + 8}px`,
+                height: `${cellSize * 9 + 8}px`,
                 gap: '0'
               }}
             >
@@ -320,7 +328,7 @@ const SudokuGame = () => {
                     className={`
                       flex items-center justify-center relative transition-all
                       ${cell.isFixed ? 'bg-gray-700' : 'bg-gray-900 active:scale-95'}
-                      ${selectedCell?.row === rowIndex && selectedCell?.col === colIndex ? 'bg-blue-800 ring-2 ring-blue-400 z-10' : ''}
+                      ${selectedCell?.row === rowIndex && selectedCell?.col === colIndex ? 'bg-blue-800 ring-1 sm:ring-2 ring-blue-400 z-10' : ''}
                       ${cell.isError ? 'bg-red-900/50' : ''}
                     `}
                     style={{
@@ -338,7 +346,7 @@ const SudokuGame = () => {
                         font-bold
                         ${cell.isFixed ? 'text-gray-400' : cell.isError ? 'text-red-400' : 'text-white'}
                       `}
-                      style={{ fontSize: `${cellSize * 0.45}px` }}
+                      style={{ fontSize: `${cellSize * 0.5}px` }}
                       >
                         {cell.value}
                       </span>
@@ -348,7 +356,7 @@ const SudokuGame = () => {
                           <span 
                             key={n} 
                             className="text-blue-400 leading-none"
-                            style={{ fontSize: `${cellSize * 0.18}px` }}
+                            style={{ fontSize: `${cellSize * 0.2}px` }}
                           >
                             {cell.notes.includes(n) ? n : ''}
                           </span>
@@ -363,28 +371,41 @@ const SudokuGame = () => {
 
           {/* 控制面板 - 优化移动端布局 */}
           <div className="w-full max-w-sm px-2">
-            {/* 数字按钮 */}
-            <div className="grid grid-cols-9 gap-1 mb-2">
-              {[1,2,3,4,5,6,7,8,9].map(num => (
-                <button
-                  key={num}
-                  onClick={() => handleNumberInput(num)}
-                  className="aspect-square bg-gray-700 hover:bg-gray-600 active:scale-95 text-white font-bold rounded-lg transition-all"
-                  style={{ fontSize: `${Math.min(cellSize * 0.5, 16)}px` }}
-                  disabled={completed}
-                >
-                  {num}
-                </button>
-              ))}
+            {/* 数字按钮 - 调整为两行布局 */}
+            <div className="mb-2">
+              <div className="grid grid-cols-5 gap-1 mb-1">
+                {[1,2,3,4,5].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => handleNumberInput(num)}
+                    className="h-10 sm:h-12 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white font-bold rounded-lg transition-all text-sm sm:text-base"
+                    disabled={completed}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                {[6,7,8,9].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => handleNumberInput(num)}
+                    className="h-10 sm:h-12 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white font-bold rounded-lg transition-all text-sm sm:text-base"
+                    disabled={completed}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* 功能按钮 */}
             <div className="grid grid-cols-3 gap-1">
               <button
                 onClick={() => setNoteMode(!noteMode)}
-                className={`p-2 ${
+                className={`h-10 sm:h-12 ${
                   noteMode ? 'bg-blue-600' : 'bg-gray-700'
-                } text-white rounded-lg transition-all active:scale-95 text-sm`}
+                } text-white rounded-lg transition-all active:scale-95 text-xs sm:text-sm`}
                 disabled={completed}
               >
                 笔记
@@ -392,15 +413,15 @@ const SudokuGame = () => {
               
               <button
                 onClick={handleClear}
-                className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all active:scale-95"
+                className="h-10 sm:h-12 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all active:scale-95 flex items-center justify-center"
                 disabled={completed}
               >
-                <Eraser size={16} className="mx-auto" />
+                <Eraser size={16} className="sm:w-4 sm:h-4" />
               </button>
               
               <button
                 onClick={handleHint}
-                className="p-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-all active:scale-95 text-sm"
+                className="h-10 sm:h-12 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-all active:scale-95 text-xs sm:text-sm"
                 disabled={completed || hints <= 0}
               >
                 提示
