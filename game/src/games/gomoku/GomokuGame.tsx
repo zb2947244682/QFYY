@@ -9,6 +9,7 @@ import GameOverModal from './components/GameOverModal'
 import ConfirmDialog from './components/ConfirmDialog'
 import QuickChat from './components/QuickChat'
 import ChatBubble from './components/ChatBubble'
+import VoiceControl from './components/VoiceControl'
 import { useGomokuStore } from './store/gameStore'
 import { useSocket } from './hooks/useSocket'
 
@@ -31,6 +32,7 @@ const GomokuGame = () => {
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
   const [showUndoConfirm, setShowUndoConfirm] = useState(false)
   const [showSurrenderConfirm, setShowSurrenderConfirm] = useState(false)
+  const [showRealSurrenderConfirm, setShowRealSurrenderConfirm] = useState(false) // 新增：真正认输的确认对话框
   const [waitingForOpponentRestart, setWaitingForOpponentRestart] = useState(false)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   
@@ -356,11 +358,27 @@ const GomokuGame = () => {
       return
     }
     
+    // 显示认输确认对话框
+    setShowRealSurrenderConfirm(true)
+  }
+
+  /**
+   * 确认认输
+   */
+  const handleConfirmSurrender = () => {
     if (roomId && myColor) {
       // 使用socket的surrender方法
       surrender(roomId, myColor)
       addNotification('info', '🏳️ 你已认输')
     }
+    setShowRealSurrenderConfirm(false)
+  }
+
+  /**
+   * 取消认输
+   */
+  const handleCancelSurrender = () => {
+    setShowRealSurrenderConfirm(false)
   }
 
   /**
@@ -424,6 +442,17 @@ const GomokuGame = () => {
         cancelText="取消"
         onConfirm={handleConfirmToSpectator}
         onCancel={handleCancelToSpectator}
+      />
+
+      {/* 认输确认对话框 */}
+      <ConfirmDialog
+        isOpen={showRealSurrenderConfirm}
+        title="认输确认"
+        message="确定要认输吗？你将输掉当前游戏。"
+        confirmText="确认认输"
+        cancelText="取消"
+        onConfirm={handleConfirmSurrender}
+        onCancel={handleCancelSurrender}
       />
 
       <AnimatePresence mode="wait">
@@ -504,12 +533,15 @@ const GomokuGame = () => {
                           
                           <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-xs px-2.5 py-1" />
                           
+                          {/* 语音控制按钮 */}
+                          <VoiceControl className="text-xs px-2.5 py-1" />
+                          
                           <button
                             onClick={handleSurrender}
                             disabled={gameState !== 'playing'}
                             className={clsx(
-                              "pixel-btn bg-red-500 hover:bg-red-600 text-xs px-2.5 py-1 transition-all",
-                              gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-red-500"
+                              "pixel-btn bg-red-600 hover:bg-red-700 text-xs px-2.5 py-1 transition-all",
+                              gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-red-600"
                             )}
                           >
                             认输
@@ -532,6 +564,9 @@ const GomokuGame = () => {
                           </button>
                           
                           <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-xs px-2.5 py-1" />
+                          
+                          {/* 观众也可以使用语音 */}
+                          <VoiceControl className="text-xs px-2.5 py-1" />
                           
                           <span className="text-yellow-400 text-xs px-2 py-1">
                             👁️ 观战模式
@@ -602,12 +637,15 @@ const GomokuGame = () => {
                         
                         <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-[8px] px-1.5 py-0.5" />
                         
+                        {/* 语音控制按钮 */}
+                        <VoiceControl className="text-[8px] px-1.5 py-0.5" />
+                        
                         <button
                           onClick={handleSurrender}
                           disabled={gameState !== 'playing'}
                           className={clsx(
-                            "pixel-btn bg-red-500 hover:bg-red-600 text-[8px] px-1.5 py-0.5 transition-all",
-                            gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-red-500"
+                            "pixel-btn bg-red-600 hover:bg-red-700 text-[8px] px-1.5 py-0.5 transition-all",
+                            gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-red-600"
                           )}
                         >
                           认输
@@ -630,6 +668,9 @@ const GomokuGame = () => {
                         </button>
                         
                         <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-[8px] px-1.5 py-0.5" />
+                        
+                        {/* 观众也可以使用语音 */}
+                        <VoiceControl className="text-[8px] px-1.5 py-0.5" />
                       </>
                     ) : null}
                     
