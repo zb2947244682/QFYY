@@ -20,6 +20,7 @@ const SnakeGame = () => {
   const [food, setFood] = useState<Position>(INITIAL_FOOD)
   const [direction, setDirection] = useState<'UP' | 'DOWN' | 'LEFT' | 'RIGHT'>('RIGHT')
   const directionRef = useRef(direction)
+  const lastMoveTimeRef = useRef<number>(0)
   const [gameOver, setGameOver] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [score, setScore] = useState(0)
@@ -107,7 +108,10 @@ const SnakeGame = () => {
   useEffect(() => {
     if (!isPlaying || gameOver) return
 
-    const gameInterval = setInterval(moveSnake, INITIAL_SPEED)
+    const gameInterval = setInterval(() => {
+      moveSnake()
+      lastMoveTimeRef.current = Date.now()
+    }, INITIAL_SPEED)
     return () => clearInterval(gameInterval)
   }, [isPlaying, gameOver, moveSnake])
 
@@ -123,9 +127,20 @@ const SnakeGame = () => {
       'RIGHT': 'LEFT'
     }
     
+    // 防止在同一个游戏循环内多次改变方向
+    if (directionRef.current === newDirection) return
+    
     if (directionRef.current !== opposites[newDirection]) {
       setDirection(newDirection)
       directionRef.current = newDirection
+      
+      // 立即执行一次移动，提高响应速度
+      // 但需要确保不会导致重复移动
+      const now = Date.now()
+      if (!lastMoveTimeRef.current || now - lastMoveTimeRef.current > 50) {
+        moveSnake()
+        lastMoveTimeRef.current = now
+      }
     }
   }
 
