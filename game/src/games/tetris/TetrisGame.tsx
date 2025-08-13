@@ -342,6 +342,27 @@ const TetrisGame = () => {
   //   }
   // }
 
+  // 开始/暂停游戏
+  const togglePlayPause = () => {
+    if (gameOver) {
+      resetGame()
+      return
+    }
+    
+    if (!isPlaying) {
+      // 开始游戏
+      if (!currentPiece) {
+        const piece = spawnPiece(nextPiece)
+        setCurrentPiece(piece)
+        setNextPiece(getRandomTetromino())
+      }
+      setIsPlaying(true)
+    } else {
+      // 暂停游戏
+      setIsPlaying(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col p-2 overflow-hidden">
       <motion.div
@@ -518,11 +539,11 @@ const TetrisGame = () => {
 
               {/* 开始/暂停按钮 */}
               <button
-                onClick={() => setIsPlaying(!isPlaying)}
+                onClick={togglePlayPause}
                 className={`p-3 ${
                   isPlaying ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'
                 } text-white rounded-lg transition-all active:scale-95 flex items-center justify-center`}
-                disabled={gameOver}
+                disabled={false}
               >
                 {isPlaying ? <Pause size={20} /> : <Play size={20} />}
               </button>

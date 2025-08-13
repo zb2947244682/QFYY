@@ -227,10 +227,11 @@ const SudokuGame = () => {
     if (typeof window !== 'undefined') {
       const screenWidth = window.innerWidth
       const screenHeight = window.innerHeight
-      const maxBoardSize = Math.min(screenWidth - 32, screenHeight * 0.5)
+      // 为移动端优化，留出更多空间给控制面板
+      const maxBoardSize = Math.min(screenWidth - 40, screenHeight * 0.4, 360)
       return Math.floor(maxBoardSize / 9)
     }
-    return 40
+    return 36
   }
 
   const [cellSize, setCellSize] = useState(getCellSize())
@@ -244,11 +245,11 @@ const SudokuGame = () => {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-900 to-gray-900 flex flex-col p-2 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-900 to-gray-900 flex flex-col">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg mx-auto flex flex-col h-screen"
+        className="w-full max-w-lg mx-auto flex flex-col min-h-screen px-4 py-2"
       >
         {/* 游戏头部 - 精简版 */}
         <div className="bg-gray-800/50 backdrop-blur rounded-xl p-3 mb-2">
@@ -299,15 +300,16 @@ const SudokuGame = () => {
           </div>
         </div>
 
-        {/* 游戏区域 */}
-        <div className="flex-1 flex flex-col justify-center items-center">
+        {/* 游戏区域 - 调整布局以适应移动端 */}
+        <div className="flex-1 flex flex-col items-center justify-start overflow-y-auto pb-4">
           {/* 数独棋盘 */}
           <div className="bg-gray-800 p-1 rounded-lg mb-3">
             <div 
-              className="grid grid-cols-9 gap-0"
+              className="grid grid-cols-9"
               style={{
-                width: `${cellSize * 9 + 8}px`,
-                height: `${cellSize * 9 + 8}px`
+                width: `${cellSize * 9 + 16}px`,
+                height: `${cellSize * 9 + 16}px`,
+                gap: '0'
               }}
             >
               {board.map((row, rowIndex) => 
@@ -318,14 +320,16 @@ const SudokuGame = () => {
                     className={`
                       flex items-center justify-center relative transition-all
                       ${cell.isFixed ? 'bg-gray-700' : 'bg-gray-900 active:scale-95'}
-                      ${selectedCell?.row === rowIndex && selectedCell?.col === colIndex ? 'bg-blue-800 ring-2 ring-blue-400' : ''}
+                      ${selectedCell?.row === rowIndex && selectedCell?.col === colIndex ? 'bg-blue-800 ring-2 ring-blue-400 z-10' : ''}
                       ${cell.isError ? 'bg-red-900/50' : ''}
-                      ${colIndex % 3 === 2 && colIndex < 8 ? 'border-r-2 border-gray-600' : colIndex < 8 ? 'border-r border-gray-800' : ''}
-                      ${rowIndex % 3 === 2 && rowIndex < 8 ? 'border-b-2 border-gray-600' : rowIndex < 8 ? 'border-b border-gray-800' : ''}
                     `}
                     style={{
                       width: `${cellSize}px`,
-                      height: `${cellSize}px`
+                      height: `${cellSize}px`,
+                      borderRight: colIndex % 3 === 2 && colIndex < 8 ? '2px solid #4B5563' : colIndex < 8 ? '1px solid #1F2937' : 'none',
+                      borderBottom: rowIndex % 3 === 2 && rowIndex < 8 ? '2px solid #4B5563' : rowIndex < 8 ? '1px solid #1F2937' : 'none',
+                      borderTop: rowIndex === 0 ? '1px solid #1F2937' : 'none',
+                      borderLeft: colIndex === 0 ? '1px solid #1F2937' : 'none'
                     }}
                     disabled={completed}
                   >
@@ -334,17 +338,17 @@ const SudokuGame = () => {
                         font-bold
                         ${cell.isFixed ? 'text-gray-400' : cell.isError ? 'text-red-400' : 'text-white'}
                       `}
-                      style={{ fontSize: `${cellSize * 0.5}px` }}
+                      style={{ fontSize: `${cellSize * 0.45}px` }}
                       >
                         {cell.value}
                       </span>
                     ) : (
-                      <div className="grid grid-cols-3 gap-0 p-1">
+                      <div className="grid grid-cols-3 gap-0 p-0.5">
                         {[1,2,3,4,5,6,7,8,9].map(n => (
                           <span 
                             key={n} 
-                            className="text-blue-400"
-                            style={{ fontSize: `${cellSize * 0.2}px` }}
+                            className="text-blue-400 leading-none"
+                            style={{ fontSize: `${cellSize * 0.18}px` }}
                           >
                             {cell.notes.includes(n) ? n : ''}
                           </span>
@@ -357,15 +361,16 @@ const SudokuGame = () => {
             </div>
           </div>
 
-          {/* 控制面板 - 优化布局 */}
-          <div className="w-full max-w-sm">
+          {/* 控制面板 - 优化移动端布局 */}
+          <div className="w-full max-w-sm px-2">
             {/* 数字按钮 */}
             <div className="grid grid-cols-9 gap-1 mb-2">
               {[1,2,3,4,5,6,7,8,9].map(num => (
                 <button
                   key={num}
                   onClick={() => handleNumberInput(num)}
-                  className="aspect-square bg-gray-700 hover:bg-gray-600 active:scale-95 text-white font-bold rounded-lg transition-all text-lg"
+                  className="aspect-square bg-gray-700 hover:bg-gray-600 active:scale-95 text-white font-bold rounded-lg transition-all"
+                  style={{ fontSize: `${Math.min(cellSize * 0.5, 16)}px` }}
                   disabled={completed}
                 >
                   {num}

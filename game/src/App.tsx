@@ -10,10 +10,12 @@ import MemoryGame from '@games/memory/MemoryGame'
 import SudokuGame from '@games/sudoku/SudokuGame'
 import BreakoutGame from '@games/breakout/BreakoutGame'
 import Layout from '@components/Layout'
+import ScrollToTop from '@components/ScrollToTop'
 
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <AnimatePresence mode="wait">
         <Routes>
           <Route path="/" element={<Layout />}>
