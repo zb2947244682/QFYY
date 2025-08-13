@@ -900,6 +900,129 @@ io.on('connection', (socket) => {
     });
     
     /**
+     * 井字棋游戏事件处理
+     */
+    
+    // 创建井字棋房间
+    socket.on('ttt-create-room', () => {
+        console.log(`[TicTacToe] 创建房间请求: ${socket.id}`);
+        
+        const room = roomManager.createRoom(socket.id);
+        socket.join(room.id);
+        
+        socket.emit('ttt-room-created', {
+            roomId: room.id,
+            isHost: true
+        });
+        
+        console.log(`[TicTacToe] 房间创建成功: ${room.id}`);
+    });
+    
+    // 加入井字棋房间
+    socket.on('ttt-join-room', (data) => {
+        const { roomId } = data;
+        console.log(`[TicTacToe] 加入房间请求: ${socket.id} -> ${roomId}`);
+        
+        const result = roomManager.joinRoom(roomId, socket.id);
+        
+        if (result.success) {
+            socket.join(roomId);
+            socket.emit('ttt-room-joined', {
+                roomId: roomId,
+                isHost: false
+            });
+            
+            // 通知房主有人加入
+            const room = result.room;
+            socket.to(room.host).emit('ttt-player-joined', {
+                playerId: socket.id
+            });
+            
+            // 如果房间满了，开始游戏
+            if (room.players.length === 2) {
+                // 随机分配X和O
+                const symbols = Math.random() < 0.5 ? ['X', 'O'] : ['O', 'X'];
+                
+                io.to(room.players[0]).emit('ttt-game-start', {
+                    playerSymbol: symbols[0],
+                    opponentId: room.players[1]
+                });
+                
+                io.to(room.players[1]).emit('ttt-game-start', {
+                    playerSymbol: symbols[1],
+                    opponentId: room.players[0]
+                });
+                
+                console.log(`[TicTacToe] 游戏开始: 房间 ${roomId}`);
+            }
+        } else {
+            socket.emit('ttt-error', { message: result.error });
+        }
+    });
+    
+    // 井字棋落子
+    socket.on('ttt-make-move', (data) => {
+        const { roomId, row, col } = data;
+        console.log(`[TicTacToe] 落子: ${socket.id} 在 [${row}, ${col}]`);
+        
+        // 转发给对手
+        socket.to(roomId).emit('ttt-opponent-move', { row, col });
+    });
+    
+    // 井字棋请求重新开始
+    socket.on('ttt-request-restart', (data) => {
+        const { roomId } = data;
+        console.log(`[TicTacToe] 请求重新开始: ${socket.id}`);
+        
+        socket.to(roomId).emit('ttt-restart-request');
+    });
+    
+    // 井字棋同意重新开始
+    socket.on('ttt-accept-restart', (data) => {
+        const { roomId } = data;
+        console.log(`[TicTacToe] 同意重新开始: ${socket.id}`);
+        
+        // 重新分配符号
+        const room = roomManager.rooms.get(roomId);
+        if (room && room.players.length === 2) {
+            const symbols = Math.random() < 0.5 ? ['X', 'O'] : ['O', 'X'];
+            
+            io.to(room.players[0]).emit('ttt-game-restart');
+            io.to(room.players[0]).emit('ttt-game-start', {
+                playerSymbol: symbols[0],
+                opponentId: room.players[1]
+            });
+            
+            io.to(room.players[1]).emit('ttt-game-restart');
+            io.to(room.players[1]).emit('ttt-game-start', {
+                playerSymbol: symbols[1],
+                opponentId: room.players[0]
+            });
+        }
+    });
+    
+    // 井字棋拒绝重新开始
+    socket.on('ttt-reject-restart', (data) => {
+        const { roomId } = data;
+        console.log(`[TicTacToe] 拒绝重新开始: ${socket.id}`);
+        
+        socket.to(roomId).emit('ttt-restart-rejected');
+    });
+    
+    // 井字棋离开房间
+    socket.on('ttt-leave-room', (data) => {
+        const { roomId } = data;
+        console.log(`[TicTacToe] 离开房间: ${socket.id}`);
+        
+        socket.to(roomId).emit('ttt-player-left', {
+            playerId: socket.id
+        });
+        
+        roomManager.leaveRoom(roomId, socket.id);
+        socket.leave(roomId);
+    });
+    
+    /**
      * 断开连接事件处理
      */
     socket.on('disconnect', () => {
