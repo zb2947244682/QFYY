@@ -266,14 +266,30 @@ const GomokuGame = () => {
    * 处理离开房间
    */
   const handleLeaveRoom = () => {
+    console.log('Leaving room:', roomId)
+    
     if (socket && roomId) {
       socket.emit('leave-room', { roomId })
+      // 确保socket也离开对应的房间
+      socket.emit('socket-leave-room', { roomId })
     }
+    
+    // 重置所有本地状态
     setIsInRoom(false)
-    resetGame()
-    setRoomInfo(null, false)
+    setShowGameOverModal(false)
+    setPendingRestart(false)
+    setPendingUndo(false)
+    setShowRestartConfirm(false)
+    setShowUndoConfirm(false)
+    setShowSurrenderConfirm(false)
+    setShowRealSurrenderConfirm(false)
     setWaitingForOpponentRestart(false)
     setChatMessages([])
+    
+    // 重置游戏状态
+    resetGame()
+    setRoomInfo(null, false)
+    
     addNotification('info', '👋 已离开房间')
   }
 

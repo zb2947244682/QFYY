@@ -79,7 +79,10 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
 
     // 房间错误
     socket.on('room-error', (error: { message: string }) => {
-      alert(error.message)
+      console.error('房间操作错误:', error.message)
+      // 使用游戏内通知系统代替alert
+      const { addNotification } = useGomokuStore.getState()
+      addNotification('error', `❌ ${error.message}`)
       setLoading(false)
     })
 
@@ -100,6 +103,10 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
       alert('未连接到服务器')
       return
     }
+    if (loading) {
+      console.log('操作进行中，请稍候')
+      return
+    }
     setLoading(true)
     socket.emit('create-room')
   }
@@ -114,6 +121,10 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
       alert('未连接到服务器')
       return
     }
+    if (loading) {
+      console.log('操作进行中，请稍候')
+      return
+    }
     setLoading(true)
     socket.emit('join-room', { roomId: id })
   }
@@ -126,6 +137,10 @@ const RoomManager = ({ onJoinRoom }: RoomManagerProps) => {
     }
     if (!socket || !connected) {
       alert('未连接到服务器')
+      return
+    }
+    if (loading) {
+      console.log('操作进行中，请稍候')
       return
     }
     setLoading(true)

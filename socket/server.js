@@ -128,6 +128,19 @@ class RoomManager {
      * @returns {Object} 加入结果，包含成功状态和房间信息或错误信息
      */
     joinRoom(roomId, playerSocketId) {
+        // 检查用户是否已经在其他房间
+        const existingRoomId = this.playerRooms.get(playerSocketId);
+        if (existingRoomId) {
+            if (existingRoomId === roomId) {
+                console.log(`用户已在目标房间中: ${playerSocketId} in ${roomId}`);
+                return { success: false, error: '已在该房间中' };
+            } else {
+                console.log(`用户在其他房间中，先离开: ${playerSocketId} from ${existingRoomId}`);
+                // 自动离开当前房间
+                this.leaveRoom(playerSocketId);
+            }
+        }
+        
         const room = this.rooms.get(roomId);
         
         if (!room) {
@@ -135,7 +148,7 @@ class RoomManager {
             return { success: false, error: '房间不存在' };
         }
         
-        // 检查是否已经在房间中（作为玩家或观众）
+        // 再次检查是否已经在房间中（作为玩家或观众）
         if (room.players.includes(playerSocketId) || room.spectators.includes(playerSocketId)) {
             console.log(`用户已在房间中: ${playerSocketId} in ${roomId}`);
             return { success: false, error: '已在房间中' };
@@ -162,6 +175,19 @@ class RoomManager {
      * @returns {Object} 加入结果
      */
     joinAsSpectator(roomId, spectatorSocketId) {
+        // 检查用户是否已经在其他房间
+        const existingRoomId = this.playerRooms.get(spectatorSocketId);
+        if (existingRoomId) {
+            if (existingRoomId === roomId) {
+                console.log(`用户已在目标房间中: ${spectatorSocketId} in ${roomId}`);
+                return { success: false, error: '已在该房间中' };
+            } else {
+                console.log(`用户在其他房间中，先离开: ${spectatorSocketId} from ${existingRoomId}`);
+                // 自动离开当前房间
+                this.leaveRoom(spectatorSocketId);
+            }
+        }
+        
         const room = this.rooms.get(roomId);
         
         if (!room) {
@@ -169,7 +195,7 @@ class RoomManager {
             return { success: false, error: '房间不存在' };
         }
         
-        // 检查是否已经在房间中
+        // 再次检查是否已经在房间中
         if (room.players.includes(spectatorSocketId) || room.spectators.includes(spectatorSocketId)) {
             console.log(`用户已在房间中: ${spectatorSocketId} in ${roomId}`);
             return { success: false, error: '已在房间中' };
@@ -192,21 +218,32 @@ class RoomManager {
     spectatorToPlayer(socketId) {
         const roomId = this.playerRooms.get(socketId);
         if (!roomId) {
+            console.log(`spectatorToPlayer失败: ${socketId} 不在任何房间中`);
             return { success: false, error: '不在任何房间中' };
         }
         
         const room = this.rooms.get(roomId);
         if (!room) {
+            console.log(`spectatorToPlayer失败: 房间 ${roomId} 不存在`);
+            // 清理无效的映射
+            this.playerRooms.delete(socketId);
             return { success: false, error: '房间不存在' };
         }
         
         // 检查是否是观众
         if (!room.spectators.includes(socketId)) {
+            // 可能是玩家
+            if (room.players.includes(socketId)) {
+                console.log(`spectatorToPlayer失败: ${socketId} 已经是玩家`);
+                return { success: false, error: '已经是玩家' };
+            }
+            console.log(`spectatorToPlayer失败: ${socketId} 不是观众`);
             return { success: false, error: '不是观众' };
         }
         
         // 检查房间是否有空位
         if (room.players.length >= 2) {
+            console.log(`spectatorToPlayer失败: 房间 ${roomId} 已满`);
             return { success: false, error: '房间已满' };
         }
         
@@ -228,16 +265,26 @@ class RoomManager {
     playerToSpectator(socketId) {
         const roomId = this.playerRooms.get(socketId);
         if (!roomId) {
+            console.log(`playerToSpectator失败: ${socketId} 不在任何房间中`);
             return { success: false, error: '不在任何房间中' };
         }
         
         const room = this.rooms.get(roomId);
         if (!room) {
+            console.log(`playerToSpectator失败: 房间 ${roomId} 不存在`);
+            // 清理无效的映射
+            this.playerRooms.delete(socketId);
             return { success: false, error: '房间不存在' };
         }
         
         // 检查是否是玩家
         if (!room.players.includes(socketId)) {
+            // 可能已经是观众
+            if (room.spectators.includes(socketId)) {
+                console.log(`playerToSpectator失败: ${socketId} 已经是观众`);
+                return { success: false, error: '已经是观众' };
+            }
+            console.log(`playerToSpectator失败: ${socketId} 不是玩家`);
             return { success: false, error: '不是玩家' };
         }
         
@@ -521,6 +568,16 @@ io.on('connection', (socket) => {
             
             // 更新房间列表
             io.emit('room-list', roomManager.getRoomList());
+        }
+    });
+    
+    /**
+     * Socket离开房间事件处理（额外的清理）
+     */
+    socket.on('socket-leave-room', (data) => {
+        if (data.roomId) {
+            console.log(`Socket ${socket.id} 离开房间 ${data.roomId}`);
+            socket.leave(data.roomId);
         }
     });
     
@@ -1088,7 +1145,7 @@ io.on('connection', (socket) => {
             playerId: socket.id
         });
         
-        roomManager.leaveRoom(roomId, socket.id);
+        roomManager.leaveRoom(socket.id);  // 修复：只传入 socket.id
         socket.leave(roomId);
     });
     
