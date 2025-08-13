@@ -569,6 +569,76 @@ io.on('connection', (socket) => {
     });
     
     /**
+     * 语音频道相关事件处理
+     */
+    
+    // 加入语音频道
+    socket.on('join-voice-channel', (data) => {
+        const { roomId } = data;
+        console.log(`用户 ${socket.id} 加入语音频道: 房间 ${roomId}`);
+        
+        // 通知房间内其他用户
+        socket.to(roomId).emit('user-joined-voice', {
+            userId: socket.id
+        });
+        
+        // 标记用户已加入语音频道
+        if (!socket.voiceChannels) {
+            socket.voiceChannels = new Set();
+        }
+        socket.voiceChannels.add(roomId);
+    });
+    
+    // 离开语音频道
+    socket.on('leave-voice-channel', (data) => {
+        const { roomId } = data;
+        console.log(`用户 ${socket.id} 离开语音频道: 房间 ${roomId}`);
+        
+        // 通知房间内其他用户
+        socket.to(roomId).emit('user-left-voice', {
+            userId: socket.id
+        });
+        
+        // 移除语音频道标记
+        if (socket.voiceChannels) {
+            socket.voiceChannels.delete(roomId);
+        }
+    });
+    
+    // 语音Offer
+    socket.on('voice-offer', (data) => {
+        const { roomId, offer, targetPeerId } = data;
+        console.log(`转发语音Offer: 房间 ${roomId}, ${socket.id} -> ${targetPeerId}`);
+        
+        io.to(targetPeerId).emit('voice-offer', {
+            offer: offer,
+            fromPeerId: socket.id
+        });
+    });
+    
+    // 语音Answer
+    socket.on('voice-answer', (data) => {
+        const { roomId, answer, targetPeerId } = data;
+        console.log(`转发语音Answer: 房间 ${roomId}, ${socket.id} -> ${targetPeerId}`);
+        
+        io.to(targetPeerId).emit('voice-answer', {
+            answer: answer,
+            fromPeerId: socket.id
+        });
+    });
+    
+    // 语音ICE候选
+    socket.on('voice-ice-candidate', (data) => {
+        const { roomId, candidate, targetPeerId } = data;
+        console.log(`转发语音ICE候选: 房间 ${roomId}, ${socket.id} -> ${targetPeerId}`);
+        
+        io.to(targetPeerId).emit('voice-ice-candidate', {
+            candidate: candidate,
+            fromPeerId: socket.id
+        });
+    });
+    
+    /**
      * 玩家准备事件处理
      */
     socket.on('ready-to-play', (data) => {
@@ -1032,6 +1102,17 @@ io.on('connection', (socket) => {
         gamePlayersCount--;
         if (gamePlayersCount < 0) gamePlayersCount = 0;
         console.log(`[Game] 当前游戏玩家数: ${gamePlayersCount}`);
+        
+        // 清理语音频道
+        if (socket.voiceChannels && socket.voiceChannels.size > 0) {
+            socket.voiceChannels.forEach(roomId => {
+                console.log(`清理语音频道: 用户 ${socket.id} 从房间 ${roomId} 离开`);
+                socket.to(roomId).emit('user-left-voice', {
+                    userId: socket.id
+                });
+            });
+            socket.voiceChannels.clear();
+        }
         
         // 不再广播给首页
         // io.emit('user-count-update', { count: gamePlayersCount });
