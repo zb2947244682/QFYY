@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, RotateCcw, Trophy, Heart, Pause, Play } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Trophy, Heart, Pause, Play, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Ball {
   x: number
@@ -54,6 +54,7 @@ const BreakoutGame = () => {
   const navigate = useNavigate()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()
+  const moveIntervalRef = useRef<number>()
   const [isPlaying, setIsPlaying] = useState(false)
   const [gameOver, setGameOver] = useState(false)
   const [score, setScore] = useState(0)
@@ -277,77 +278,78 @@ const BreakoutGame = () => {
     animationRef.current = requestAnimationFrame(gameLoop)
   }, [isPlaying, gameOver, ball, paddle, bricks, collisionDetection])
 
-  // 鼠标控制
+  // 清理函数
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!canvasRef.current || !isPlaying) return
-      
-      const rect = canvasRef.current.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      
-      setPaddle(prev => ({
-        ...prev,
-        x: Math.max(0, Math.min(CANVAS_WIDTH - PADDLE_WIDTH, x - PADDLE_WIDTH / 2))
-      }))
+    return () => {
+      stopMovingPaddle()
     }
-    
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [isPlaying])
-
-  // 触摸控制
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!canvasRef.current || !isPlaying) return
-    
-    const rect = canvasRef.current.getBoundingClientRect()
-    const x = e.touches[0].clientX - rect.left
-    
-    setPaddle(prev => ({
-      ...prev,
-      x: Math.max(0, Math.min(CANVAS_WIDTH - PADDLE_WIDTH, x - PADDLE_WIDTH / 2))
-    }))
-  }
+  }, [])
 
   // 键盘控制
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (!isPlaying) {
-        if (e.key === ' ') {
-          e.preventDefault()
-          setIsPlaying(true)
-        }
-        return
-      }
+      if (!isPlaying || gameOver) return
       
-      switch (e.key) {
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          setPaddle(prev => ({
-            ...prev,
-            x: Math.max(0, prev.x - 20)
-          }))
-          break
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          setPaddle(prev => ({
-            ...prev,
-            x: Math.min(CANVAS_WIDTH - PADDLE_WIDTH, prev.x + 20)
-          }))
-          break
-        case ' ':
-        case 'p':
-        case 'P':
-          e.preventDefault()
-          setIsPlaying(prev => !prev)
-          break
+      if (e.key === 'ArrowLeft') {
+        setPaddle(prev => ({
+          ...prev,
+          x: Math.max(0, prev.x - 20)
+        }))
+      } else if (e.key === 'ArrowRight') {
+        setPaddle(prev => ({
+          ...prev,
+          x: Math.min(CANVAS_WIDTH - PADDLE_WIDTH, prev.x + 20)
+        }))
       }
     }
     
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [isPlaying])
+  }, [isPlaying, gameOver])
+
+  // 移动挡板
+  const startMovingPaddle = (direction: 'left' | 'right') => {
+    if (!isPlaying || gameOver) return
+    
+    // 清除之前的移动
+    if (moveIntervalRef.current) {
+      clearInterval(moveIntervalRef.current)
+    }
+    
+    // 开始持续移动
+    moveIntervalRef.current = window.setInterval(() => {
+      setPaddle(prev => ({
+        ...prev,
+        x: direction === 'left' 
+          ? Math.max(0, prev.x - 10)
+          : Math.min(CANVAS_WIDTH - PADDLE_WIDTH, prev.x + 10)
+      }))
+    }, 30)
+  }
+
+  const stopMovingPaddle = () => {
+    if (moveIntervalRef.current) {
+      clearInterval(moveIntervalRef.current)
+      moveIntervalRef.current = undefined
+    }
+  }
+
+  // 点击控制 - 点击画布左右两侧
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isPlaying || gameOver) return
+    
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    
+    const x = e.clientX - rect.left
+    const canvasCenter = CANVAS_WIDTH / 2
+    
+    // 直接移动挡板到点击位置附近
+    setPaddle(prev => ({
+      ...prev,
+      x: Math.max(0, Math.min(CANVAS_WIDTH - PADDLE_WIDTH, x - PADDLE_WIDTH / 2))
+    }))
+  }
 
   // 游戏循环启动
   useEffect(() => {
@@ -367,70 +369,96 @@ const BreakoutGame = () => {
     initBricks()
   }, [initBricks])
 
+  // 获取画布大小（根据屏幕尺寸自适应）
+  const getCanvasScale = () => {
+    if (typeof window !== 'undefined') {
+      const screenWidth = window.innerWidth
+      const maxWidth = Math.min(screenWidth - 32, 600)
+      return maxWidth / CANVAS_WIDTH
+    }
+    return 1
+  }
+
+  const [canvasScale, setCanvasScale] = useState(getCanvasScale())
+
+  useEffect(() => {
+    const handleResize = () => {
+      setCanvasScale(getCanvasScale())
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex flex-col p-2 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-4xl"
+        className="w-full max-w-3xl mx-auto flex flex-col h-screen"
       >
-        {/* 游戏头部 */}
-        <div className="bg-gray-800/50 backdrop-blur rounded-t-xl p-4 border-t border-l border-r border-gray-700">
-          <div className="flex items-center justify-between mb-4">
+        {/* 游戏头部 - 精简版 */}
+        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-3 mb-2">
+          <div className="flex items-center justify-between mb-2">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+              className="p-2 text-gray-400 hover:text-white"
             >
               <ArrowLeft size={20} />
-              <span className="font-game">返回</span>
             </button>
-            <h1 className="text-2xl font-game font-bold text-white">打砖块</h1>
+            <h1 className="text-xl font-game font-bold text-white">打砖块</h1>
             <button
               onClick={resetGame}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="p-2 text-white"
             >
-              <RotateCcw size={16} />
-              <span className="font-game">重置</span>
+              <RotateCcw size={18} />
             </button>
           </div>
 
-          {/* 游戏信息 */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-              <div className="text-gray-400 text-sm font-game">分数</div>
-              <div className="text-xl font-bold text-white font-game">{score}</div>
-            </div>
-            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-              <div className="text-gray-400 text-sm font-game flex items-center justify-center gap-1">
-                <Heart size={14} />
-                生命
+          {/* 游戏信息 - 精简 */}
+          <div className="flex justify-between items-center text-sm">
+            <div className="flex gap-4">
+              <div className="flex items-center gap-1">
+                <span className="text-gray-400">分数:</span>
+                <span className="text-white font-bold">{score}</span>
               </div>
-              <div className="text-xl font-bold text-red-400 font-game">{lives}</div>
-            </div>
-            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-              <div className="text-gray-400 text-sm font-game">关卡</div>
-              <div className="text-xl font-bold text-green-400 font-game">{level}</div>
-            </div>
-            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-              <div className="text-gray-400 text-sm font-game flex items-center justify-center gap-1">
-                <Trophy size={14} />
-                最高分
+              <div className="flex items-center gap-1">
+                <span className="text-gray-400">等级:</span>
+                <span className="text-white font-bold">{level}</span>
               </div>
-              <div className="text-xl font-bold text-yellow-400 font-game">{highScore}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400">生命:</span>
+              <div className="flex gap-1">
+                {[...Array(3)].map((_, i) => (
+                  <Heart
+                    key={i}
+                    size={16}
+                    className={i < lives ? 'text-red-500 fill-red-500' : 'text-gray-600'}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <Trophy size={16} className="text-yellow-400" />
+              <span className="text-yellow-400 font-bold">{highScore}</span>
             </div>
           </div>
         </div>
 
         {/* 游戏区域 */}
-        <div className="bg-gray-900 border border-gray-700 p-6 rounded-b-xl">
-          <div className="relative flex justify-center">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="relative">
             <canvas
               ref={canvasRef}
               width={CANVAS_WIDTH}
               height={CANVAS_HEIGHT}
-              className="bg-gray-800 rounded-lg border-2 border-gray-700"
-              onTouchMove={handleTouchMove}
-              style={{ maxWidth: '100%', height: 'auto' }}
+              className="bg-gray-800 rounded-lg border-2 border-gray-700 cursor-pointer"
+              onClick={handleCanvasClick}
+              style={{ 
+                width: `${CANVAS_WIDTH * canvasScale}px`,
+                height: `${CANVAS_HEIGHT * canvasScale}px`,
+                imageRendering: 'pixelated'
+              }}
             />
             
             {/* 游戏状态覆盖层 */}
@@ -440,38 +468,33 @@ const BreakoutGame = () => {
                 animate={{ opacity: 1 }}
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-lg flex items-center justify-center"
               >
-                <div className="text-center p-6">
+                <div className="text-center p-4">
                   {gameOver ? (
                     <>
-                      <h2 className="text-3xl font-game font-bold text-red-400 mb-2">游戏结束!</h2>
-                      <p className="text-xl font-game text-white mb-2">得分: {score}</p>
+                      <h2 className="text-2xl font-game font-bold text-red-400 mb-2">游戏结束!</h2>
+                      <p className="text-lg text-white mb-1">
+                        最终分数: <span className="text-yellow-400 font-bold">{score}</span>
+                      </p>
                       {score > highScore && (
-                        <p className="text-lg font-game text-yellow-400 mb-4">🎉 新记录!</p>
+                        <p className="text-green-400 font-bold mb-3">🎉 新纪录!</p>
                       )}
                       <button
                         onClick={resetGame}
-                        className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-game rounded-lg transition-colors"
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                       >
-                        重新开始
+                        再来一局
                       </button>
                     </>
                   ) : (
                     <>
-                      <h2 className="text-2xl font-game font-bold text-white mb-4">
-                        {score === 0 ? '准备开始' : '游戏暂停'}
-                      </h2>
+                      <h2 className="text-xl font-game font-bold text-white mb-3">准备开始</h2>
                       <button
                         onClick={() => setIsPlaying(true)}
-                        className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-game rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
                       >
                         <Play size={20} />
-                        {score === 0 ? '开始游戏' : '继续'}
+                        开始游戏
                       </button>
-                      <div className="mt-4 text-gray-400 text-sm font-game">
-                        <p>使用鼠标或触摸控制挡板</p>
-                        <p>← → 或 A/D 键盘控制</p>
-                        <p>空格键暂停/继续</p>
-                      </div>
                     </>
                   )}
                 </div>
@@ -479,28 +502,47 @@ const BreakoutGame = () => {
             )}
           </div>
 
-          {/* 移动端控制提示 */}
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={() => setIsPlaying(prev => !prev)}
-              className={`px-6 py-3 ${
-                isPlaying 
-                  ? 'bg-orange-600 hover:bg-orange-700' 
-                  : 'bg-green-600 hover:bg-green-700'
-              } text-white font-game rounded-lg transition-colors flex items-center gap-2`}
-            >
-              {isPlaying ? (
-                <>
-                  <Pause size={20} />
-                  暂停
-                </>
-              ) : (
-                <>
-                  <Play size={20} />
-                  {score === 0 ? '开始' : '继续'}
-                </>
-              )}
-            </button>
+          {/* 控制按钮 - 移动端优化 */}
+          <div className="mt-4 w-full max-w-xs">
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onMouseDown={() => startMovingPaddle('left')}
+                onMouseUp={stopMovingPaddle}
+                onMouseLeave={stopMovingPaddle}
+                onTouchStart={() => startMovingPaddle('left')}
+                onTouchEnd={stopMovingPaddle}
+                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                disabled={!isPlaying || gameOver}
+              >
+                <ChevronLeft size={24} />
+              </button>
+              
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className={`p-4 ${
+                  isPlaying ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'
+                } text-white rounded-lg transition-all active:scale-95 flex items-center justify-center`}
+                disabled={gameOver}
+              >
+                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+              </button>
+              
+              <button
+                onMouseDown={() => startMovingPaddle('right')}
+                onMouseUp={stopMovingPaddle}
+                onMouseLeave={stopMovingPaddle}
+                onTouchStart={() => startMovingPaddle('right')}
+                onTouchEnd={stopMovingPaddle}
+                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                disabled={!isPlaying || gameOver}
+              >
+                <ChevronRight size={24} />
+              </button>
+            </div>
+            
+            <div className="mt-2 text-center text-xs text-gray-400">
+              点击画布或使用按钮控制挡板
+            </div>
           </div>
         </div>
       </motion.div>

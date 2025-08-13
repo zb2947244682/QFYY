@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, RotateCcw, Trophy, Pause, Play, RotateCw, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Pause, Play, RotateCw, ChevronDown, ChevronLeft, ChevronRight, ArrowDown } from 'lucide-react'
 
 // 游戏配置
 const BOARD_WIDTH = 10
@@ -181,13 +181,10 @@ const TetrisGame = () => {
       y: currentPiece.position.y + dy
     }
     
-    const movedPiece = {
-      ...currentPiece,
-      position: newPosition
-    }
+    const newPiece = { ...currentPiece, position: newPosition }
     
-    if (!checkCollision(board, movedPiece)) {
-      setCurrentPiece(movedPiece)
+    if (!checkCollision(board, newPiece)) {
+      setCurrentPiece(newPiece)
       return true
     }
     
@@ -235,6 +232,38 @@ const TetrisGame = () => {
     setScore(prev => prev + dropDistance * 2)
   }, [currentPiece, isPlaying, gameOver, movePiece])
 
+  // 锁定方块
+  const lockPiece = useCallback(() => {
+    if (!currentPiece || !isPlaying || gameOver) return
+    
+    const newBoard = mergePiece(board, currentPiece)
+    const { board: clearedBoard, linesCleared } = clearLines(newBoard)
+    
+    setBoard(clearedBoard)
+    
+    if (linesCleared > 0) {
+      setLines(prev => prev + linesCleared)
+      setScore(prev => prev + linesCleared * 100 * level)
+      setLevel(Math.floor((lines + linesCleared) / 10) + 1)
+    }
+    
+    // 生成新方块
+    const newPiece = spawnPiece(nextPiece)
+    
+    // 检查游戏结束
+    if (checkCollision(clearedBoard, newPiece)) {
+      setGameOver(true)
+      setIsPlaying(false)
+      if (score > highScore) {
+        setHighScore(score)
+        localStorage.setItem('tetris-high-score', score.toString())
+      }
+    } else {
+      setCurrentPiece(newPiece)
+      setNextPiece(getRandomTetromino())
+    }
+  }, [currentPiece, board, isPlaying, gameOver, nextPiece, level, lines, score, highScore])
+
   // 游戏主循环
   useEffect(() => {
     if (!isPlaying || gameOver || !currentPiece) return
@@ -243,91 +272,33 @@ const TetrisGame = () => {
     const interval = setInterval(() => {
       if (!movePiece(0, 1)) {
         // 方块无法下落，固定到棋盘
-        const newBoard = mergePiece(board, currentPiece)
-        const { board: clearedBoard, linesCleared } = clearLines(newBoard)
-        
-        setBoard(clearedBoard)
-        
-        if (linesCleared > 0) {
-          setLines(prev => prev + linesCleared)
-          setScore(prev => prev + linesCleared * 100 * level)
-          setLevel(Math.floor((lines + linesCleared) / 10) + 1)
-        }
-        
-        // 生成新方块
-        const newPiece = spawnPiece(nextPiece)
-        
-        // 检查游戏结束
-        if (checkCollision(clearedBoard, newPiece)) {
-          setGameOver(true)
-          setIsPlaying(false)
-          if (score > highScore) {
-            setHighScore(score)
-            localStorage.setItem('tetris-high-score', score.toString())
-          }
-        } else {
-          setCurrentPiece(newPiece)
-          setNextPiece(getRandomTetromino())
-        }
+        lockPiece()
       }
     }, speed)
     
     return () => clearInterval(interval)
-  }, [currentPiece, board, isPlaying, gameOver, nextPiece, movePiece, level, lines, score, highScore])
+  }, [currentPiece, board, isPlaying, gameOver, movePiece, lockPiece, level])
 
   // 键盘控制
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (!isPlaying || gameOver) {
-        if (e.key === ' ') {
-          e.preventDefault()
-          if (gameOver) {
-            resetGame()
-          } else {
-            startGame()
-          }
-        }
-        return
-      }
+      if (!isPlaying || gameOver) return
       
-      const now = Date.now()
-      const timeSinceLastMove = now - lastMoveRef.current
-      
-      switch (e.key) {
+      switch(e.key) {
         case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          if (timeSinceLastMove > 50) {
-            movePiece(-1, 0)
-            lastMoveRef.current = now
-          }
+          movePiece(-1, 0)
           break
         case 'ArrowRight':
-        case 'd':
-        case 'D':
-          if (timeSinceLastMove > 50) {
-            movePiece(1, 0)
-            lastMoveRef.current = now
-          }
+          movePiece(1, 0)
           break
         case 'ArrowDown':
-        case 's':
-        case 'S':
           movePiece(0, 1)
-          setScore(prev => prev + 1)
           break
         case 'ArrowUp':
-        case 'w':
-        case 'W':
           rotatePiece()
           break
         case ' ':
-          e.preventDefault()
           hardDrop()
-          break
-        case 'p':
-        case 'P':
-          setIsPlaying(prev => !prev)
           break
       }
     }
@@ -336,42 +307,7 @@ const TetrisGame = () => {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [isPlaying, gameOver, movePiece, rotatePiece, hardDrop])
 
-  // 触摸控制
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0]
-    setTouchStart({ x: touch.clientX, y: touch.clientY })
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStart || !isPlaying || gameOver) return
-    
-    const touch = e.changedTouches[0]
-    const deltaX = touch.clientX - touchStart.x
-    const deltaY = touch.clientY - touchStart.y
-    
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      // 水平滑动
-      if (Math.abs(deltaX) > 30) {
-        if (deltaX > 0) {
-          movePiece(1, 0)
-        } else {
-          movePiece(-1, 0)
-        }
-      }
-    } else {
-      // 垂直滑动
-      if (deltaY > 50) {
-        // 下滑加速
-        movePiece(0, 1)
-        setScore(prev => prev + 1)
-      } else if (deltaY < -30) {
-        // 上滑旋转
-        rotatePiece()
-      }
-    }
-    
-    setTouchStart(null)
-  }
+  // 移除触摸控制，改为使用按钮控制
 
   // 点击旋转
   const handleTap = () => {
@@ -406,240 +342,219 @@ const TetrisGame = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-900 to-gray-900 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col p-2 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-4xl"
+        className="w-full max-w-4xl mx-auto flex flex-col h-screen"
       >
-        {/* 游戏头部 */}
-        <div className="bg-gray-800/50 backdrop-blur rounded-t-xl p-4 border-t border-l border-r border-gray-700">
-          <div className="flex items-center justify-between mb-4">
+        {/* 游戏头部 - 精简版 */}
+        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-3 mb-2">
+          <div className="flex items-center justify-between mb-2">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+              className="p-2 text-gray-400 hover:text-white"
             >
               <ArrowLeft size={20} />
-              <span className="font-game">返回</span>
             </button>
-            <h1 className="text-2xl font-game font-bold text-white">俄罗斯方块</h1>
+            <h1 className="text-xl font-game font-bold text-white">俄罗斯方块</h1>
             <button
               onClick={resetGame}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="p-2 text-white"
             >
-              <RotateCcw size={16} />
-              <span className="font-game">重置</span>
+              <RotateCcw size={18} />
             </button>
+          </div>
+
+          {/* 游戏信息 - 精简 */}
+          <div className="grid grid-cols-4 gap-2 text-xs">
+            <div className="bg-gray-700/50 rounded p-2 text-center">
+              <div className="text-gray-400">分数</div>
+              <div className="text-white font-bold">{score}</div>
+            </div>
+            <div className="bg-gray-700/50 rounded p-2 text-center">
+              <div className="text-gray-400">行数</div>
+              <div className="text-white font-bold">{lines}</div>
+            </div>
+            <div className="bg-gray-700/50 rounded p-2 text-center">
+              <div className="text-gray-400">等级</div>
+              <div className="text-white font-bold">{level}</div>
+            </div>
+            <div className="bg-gray-700/50 rounded p-2 text-center">
+              <div className="text-gray-400">最高</div>
+              <div className="text-yellow-400 font-bold">{highScore}</div>
+            </div>
           </div>
         </div>
 
-        {/* 游戏主体 */}
-        <div className="bg-gray-900 border border-gray-700 p-4 rounded-b-xl">
-          <div className="flex flex-col lg:flex-row gap-4">
+        {/* 游戏主区域 */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex gap-3">
             {/* 游戏板 */}
-            <div 
-              ref={gameRef}
-              className="relative bg-gray-800 rounded-lg p-2"
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-              onClick={handleTap}
-            >
-              <div className="grid grid-cols-10 gap-px bg-gray-700" style={{ width: '240px' }}>
-                {board.map((row, y) => 
-                  row.map((cell, x) => (
-                    <div
-                      key={`${y}-${x}`}
-                      className={`w-6 h-6 ${
-                        cell ? `bg-gradient-to-br ${cell}` : 'bg-gray-900'
-                      } ${cell ? 'border border-gray-600' : ''}`}
-                    />
-                  ))
-                )}
-                
-                {/* 当前方块 */}
-                {currentPiece && currentPiece.shape.map((row, y) =>
-                  row.map((cell, x) => {
-                    if (!cell) return null
-                    const boardY = currentPiece.position.y + y
-                    const boardX = currentPiece.position.x + x
-                    if (boardY < 0 || boardY >= BOARD_HEIGHT || boardX < 0 || boardX >= BOARD_WIDTH) return null
-                    
-                    return (
-                      <motion.div
-                        key={`current-${y}-${x}`}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className={`absolute w-6 h-6 bg-gradient-to-br ${
-                          TETROMINOS[currentPiece.type].color
-                        } border border-gray-600`}
-                        style={{
-                          left: `${boardX * 24 + boardX}px`,
-                          top: `${boardY * 24 + boardY}px`
-                        }}
+            <div className="flex flex-col items-center">
+              <div 
+                ref={gameRef}
+                className="relative bg-gray-800 rounded-lg p-1"
+              >
+                <div 
+                  className="grid grid-cols-10 gap-px bg-gray-700"
+                  style={{ 
+                    width: `${window.innerWidth < 400 ? '200px' : '240px'}`,
+                    aspectRatio: '1/2'
+                  }}
+                >
+                  {board.map((row, y) => 
+                    row.map((cell, x) => (
+                      <div
+                        key={`${y}-${x}`}
+                        className={`aspect-square ${
+                          cell ? `bg-gradient-to-br ${cell}` : 'bg-gray-900'
+                        } ${cell ? 'border border-gray-600' : ''}`}
                       />
-                    )
-                  })
-                )}
+                    ))
+                  )}
+                  
+                  {/* 当前方块 */}
+                  {currentPiece && currentPiece.shape.map((row, y) =>
+                    row.map((cell, x) => {
+                      if (!cell) return null
+                      const boardX = currentPiece.position.x + x
+                      const boardY = currentPiece.position.y + y
+                      if (boardY < 0) return null
+                      
+                      return (
+                        <div
+                          key={`current-${y}-${x}`}
+                          className={`absolute aspect-square bg-gradient-to-br ${
+                            TETROMINOS[currentPiece.type].color
+                          } border border-gray-600`}
+                          style={{
+                            left: `${boardX * (100 / BOARD_WIDTH)}%`,
+                            top: `${boardY * (100 / BOARD_HEIGHT)}%`,
+                            width: `${100 / BOARD_WIDTH}%`,
+                            height: `${100 / BOARD_HEIGHT}%`
+                          }}
+                        />
+                      )
+                    })
+                  )}
+                </div>
               </div>
 
-              {/* 游戏结束/暂停覆盖层 */}
-              {(!isPlaying || gameOver) && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute inset-0 bg-black/70 backdrop-blur-sm rounded-lg flex items-center justify-center"
-                >
-                  <div className="text-center p-4">
-                    {gameOver ? (
-                      <>
-                        <h2 className="text-3xl font-game font-bold text-red-400 mb-2">游戏结束!</h2>
-                        <p className="text-xl font-game text-white mb-2">得分: {score}</p>
-                        {score > highScore && (
-                          <p className="text-lg font-game text-yellow-400 mb-4">🎉 新纪录!</p>
-                        )}
-                        <button
-                          onClick={resetGame}
-                          className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-game rounded-lg transition-colors"
-                        >
-                          重新开始
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <h2 className="text-2xl font-game font-bold text-white mb-4">
-                          {score === 0 ? '准备开始' : '游戏暂停'}
-                        </h2>
-                        <button
-                          onClick={startGame}
-                          className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-game rounded-lg transition-colors flex items-center gap-2 mx-auto"
-                        >
-                          <Play size={20} />
-                          {score === 0 ? '开始游戏' : '继续'}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </motion.div>
-              )}
+              {/* 控制按钮 - 移动端优化 */}
+              <div className="mt-3 w-full max-w-xs">
+                {/* 上部控制 - 旋转和快速下落 */}
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <button
+                    onClick={rotatePiece}
+                    className="p-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                    disabled={!isPlaying || gameOver}
+                  >
+                    <RotateCw size={20} />
+                  </button>
+                  <button
+                    onClick={hardDrop}
+                    className="p-3 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                    disabled={!isPlaying || gameOver}
+                  >
+                    <ArrowDown size={20} />
+                  </button>
+                </div>
+
+                {/* 方向控制 */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => movePiece(-1, 0)}
+                    className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                    disabled={!isPlaying || gameOver}
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={() => movePiece(0, 1)}
+                    className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                    disabled={!isPlaying || gameOver}
+                  >
+                    <ChevronDown size={20} />
+                  </button>
+                  <button
+                    onClick={() => movePiece(1, 0)}
+                    className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                    disabled={!isPlaying || gameOver}
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* 信息面板 */}
-            <div className="flex-1 space-y-4">
+            {/* 侧边信息 */}
+            <div className="flex flex-col gap-2">
               {/* 下一个方块 */}
-              <div className="bg-gray-800 rounded-lg p-4">
-                <h3 className="text-sm font-game text-gray-400 mb-2">下一个</h3>
-                <div className="flex justify-center">
-                  <div className="grid gap-px bg-gray-700 p-1">
-                    {TETROMINOS[nextPiece].shape.map((row, y) => (
-                      <div key={y} className="flex gap-px">
-                        {row.map((cell, x) => (
+              <div className="bg-gray-800 rounded-lg p-2">
+                <div className="text-gray-400 text-xs mb-1 text-center">下一个</div>
+                <div className="bg-gray-900 rounded p-2">
+                  <div className="grid grid-cols-4 gap-px" style={{ width: '60px', height: '60px' }}>
+                    {Array(4).fill(null).map((_, y) =>
+                      Array(4).fill(null).map((_, x) => {
+                        const shape = TETROMINOS[nextPiece].shape
+                        const isActive = y < shape.length && x < shape[y].length && shape[y][x]
+                        return (
                           <div
-                            key={x}
-                            className={`w-5 h-5 ${
-                              cell 
-                                ? `bg-gradient-to-br ${TETROMINOS[nextPiece].color} border border-gray-600` 
+                            key={`next-${y}-${x}`}
+                            className={`aspect-square ${
+                              isActive 
+                                ? `bg-gradient-to-br ${TETROMINOS[nextPiece].color} border border-gray-600`
                                 : ''
                             }`}
                           />
-                        ))}
-                      </div>
-                    ))}
+                        )
+                      })
+                    )}
                   </div>
                 </div>
-              </div>
-
-              {/* 分数信息 */}
-              <div className="bg-gray-800 rounded-lg p-4 space-y-3">
-                <div>
-                  <div className="text-gray-400 text-sm font-game">分数</div>
-                  <div className="text-2xl font-bold text-white font-game">{score}</div>
-                </div>
-                <div>
-                  <div className="text-gray-400 text-sm font-game">行数</div>
-                  <div className="text-xl font-bold text-blue-400 font-game">{lines}</div>
-                </div>
-                <div>
-                  <div className="text-gray-400 text-sm font-game">等级</div>
-                  <div className="text-xl font-bold text-green-400 font-game">{level}</div>
-                </div>
-                <div>
-                  <div className="text-gray-400 text-sm font-game flex items-center gap-1">
-                    <Trophy size={14} />
-                    最高分
-                  </div>
-                  <div className="text-xl font-bold text-yellow-400 font-game">{highScore}</div>
-                </div>
-              </div>
-
-              {/* 控制说明 */}
-              <div className="bg-gray-800 rounded-lg p-4 text-xs text-gray-400 font-game space-y-1">
-                <p>← → 或 A/D: 左右移动</p>
-                <p>↓ 或 S: 加速下落</p>
-                <p>↑ 或 W: 旋转</p>
-                <p>空格: 硬降</p>
-                <p>P: 暂停</p>
-                <p className="text-purple-400">手机: 滑动或点击旋转</p>
-              </div>
-
-              {/* 移动端控制按钮 */}
-              <div className="grid grid-cols-3 gap-2 lg:hidden">
-                <button
-                  onClick={() => movePiece(-1, 0)}
-                  className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                  disabled={!isPlaying || gameOver}
-                >
-                  <ChevronLeft size={20} className="mx-auto text-white" />
-                </button>
-                <button
-                  onClick={rotatePiece}
-                  className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                  disabled={!isPlaying || gameOver}
-                >
-                  <RotateCw size={20} className="mx-auto text-white" />
-                </button>
-                <button
-                  onClick={() => movePiece(1, 0)}
-                  className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                  disabled={!isPlaying || gameOver}
-                >
-                  <ChevronRight size={20} className="mx-auto text-white" />
-                </button>
-                <button
-                  onClick={() => {
-                    movePiece(0, 1)
-                    setScore(prev => prev + 1)
-                  }}
-                  className="col-span-3 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                  disabled={!isPlaying || gameOver}
-                >
-                  <ChevronDown size={20} className="mx-auto text-white" />
-                </button>
               </div>
 
               {/* 开始/暂停按钮 */}
               <button
-                onClick={() => isPlaying ? setIsPlaying(false) : startGame()}
-                className={`w-full px-6 py-3 ${
-                  isPlaying 
-                    ? 'bg-orange-600 hover:bg-orange-700' 
-                    : 'bg-green-600 hover:bg-green-700'
-                } text-white font-game rounded-lg transition-colors flex items-center justify-center gap-2`}
+                onClick={() => setIsPlaying(!isPlaying)}
+                className={`p-3 ${
+                  isPlaying ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'
+                } text-white rounded-lg transition-all active:scale-95 flex items-center justify-center`}
+                disabled={gameOver}
               >
-                {isPlaying ? (
-                  <>
-                    <Pause size={20} />
-                    暂停
-                  </>
-                ) : (
-                  <>
-                    <Play size={20} />
-                    {gameOver || score === 0 ? '开始游戏' : '继续'}
-                  </>
-                )}
+                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
               </button>
             </div>
           </div>
         </div>
+
+        {/* 游戏结束提示 */}
+        {gameOver && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          >
+            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center">
+              <h2 className="text-2xl font-game font-bold text-red-400 mb-3">游戏结束!</h2>
+              <div className="space-y-1 mb-4">
+                <p className="text-white">
+                  最终分数: <span className="text-yellow-400 font-bold">{score}</span>
+                </p>
+                {score > highScore && (
+                  <p className="text-green-400 font-bold">🎉 新纪录!</p>
+                )}
+              </div>
+              <button
+                onClick={resetGame}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              >
+                再来一局
+              </button>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   )
