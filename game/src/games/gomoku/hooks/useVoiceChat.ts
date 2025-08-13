@@ -39,7 +39,8 @@ export const useVoiceChat = () => {
       }
       
       if (!isSecure) {
-        setErrorMessage('⚠️ 由于安全限制，语音功能仅在HTTPS或本地环境可用。请使用localhost访问或部署HTTPS证书。')
+        // 改进错误提示，提供解决方案
+        setErrorMessage('💡 语音功能需要安全连接\n\n解决方案：\n1. 使用 localhost 访问\n2. 部署HTTPS证书\n3. 使用文字聊天功能代替')
         setIsSupported(false)
         return false
       }

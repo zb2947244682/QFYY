@@ -505,81 +505,92 @@ const GomokuGame = () => {
                     {/* 棋盘 */}
                     <GameBoard />
                     
-                    {/* 控制按钮 - 紧贴棋盘 */}
-                    <div className="flex justify-center gap-1.5 mt-1 pb-2">
+                    {/* 控制按钮 - 紧贴棋盘，分组显示 */}
+                    <div className="flex flex-col gap-2 mt-2 pb-2">
                       {userRole === 'player' ? (
                         <>
-                          <button
-                            onClick={handleRestart}
-                            disabled={pendingRestart || waitingForOpponentRestart}
-                            className={clsx(
-                              "pixel-btn text-xs px-2.5 py-1 transition-all",
-                              (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
-                            )}
-                          >
-                            {waitingForOpponentRestart ? '等待对手...' : pendingRestart ? '等待确认...' : '重新开始'}
-                          </button>
+                          {/* 第一行：游戏控制 */}
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={handleRestart}
+                              disabled={pendingRestart || waitingForOpponentRestart}
+                              className={clsx(
+                                "pixel-btn bg-green-600 hover:bg-green-700 transition-all",
+                                (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
+                              )}
+                            >
+                              {waitingForOpponentRestart ? '⏳ 等待对手...' : pendingRestart ? '⏳ 等待确认...' : '🔄 重新开始'}
+                            </button>
+                            
+                            <button
+                              onClick={handleUndo}
+                              disabled={isUndoDisabled}
+                              className={clsx(
+                                "pixel-btn bg-blue-600 hover:bg-blue-700 transition-all",
+                                isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
+                              )}
+                            >
+                              {pendingUndo ? '⏳ 等待确认...' : '↩️ 悔棋'}
+                            </button>
+                            
+                            <button
+                              onClick={handleSurrender}
+                              disabled={gameState !== 'playing'}
+                              className={clsx(
+                                "pixel-btn bg-red-600 hover:bg-red-700 transition-all",
+                                gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-red-600"
+                              )}
+                            >
+                              🏳️ 认输
+                            </button>
+                          </div>
                           
-                          <button
-                            onClick={handleUndo}
-                            disabled={isUndoDisabled}
-                            className={clsx(
-                              "pixel-btn bg-blue-600 hover:bg-blue-700 text-xs px-2.5 py-1 transition-all",
-                              isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
-                            )}
-                          >
-                            {pendingUndo ? '等待确认...' : '悔棋'}
-                          </button>
-                          
-                          <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-xs px-2.5 py-1" />
-                          
-                          {/* 语音控制按钮 */}
-                          <VoiceControl className="text-xs px-2.5 py-1" />
-                          
-                          <button
-                            onClick={handleSurrender}
-                            disabled={gameState !== 'playing'}
-                            className={clsx(
-                              "pixel-btn bg-red-600 hover:bg-red-700 text-xs px-2.5 py-1 transition-all",
-                              gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-red-600"
-                            )}
-                          >
-                            认输
-                          </button>
-                          
-                          <button
-                            onClick={handleToSpectator}
-                            className="pixel-btn bg-yellow-600 hover:bg-yellow-700 text-xs px-2.5 py-1 transition-all"
-                          >
-                            到观众席
-                          </button>
+                          {/* 第二行：互动功能 */}
+                          <div className="flex justify-center gap-2">
+                            <QuickChat onSendMessage={handleSendMessage} userRole={userRole} />
+                            <VoiceControl />
+                            
+                            <div className="border-l-2 border-gray-600 mx-1"></div>
+                            
+                            <button
+                              onClick={handleToSpectator}
+                              className="pixel-btn bg-yellow-600 hover:bg-yellow-700 transition-all"
+                            >
+                              👁️ 到观众席
+                            </button>
+                            
+                            <button
+                              onClick={handleLeaveRoom}
+                              className="pixel-btn bg-gray-600 hover:bg-gray-700 transition-all"
+                            >
+                              🚪 离开房间
+                            </button>
+                          </div>
                         </>
                       ) : userRole === 'spectator' ? (
-                        <>
+                        <div className="flex justify-center gap-2">
                           <button
                             onClick={handleBecomePlayer}
-                            className="pixel-btn bg-green-600 hover:bg-green-700 text-xs px-2.5 py-1 transition-all"
+                            className="pixel-btn bg-green-600 hover:bg-green-700 transition-all"
                           >
-                            成为玩家
+                            🎮 成为玩家
                           </button>
                           
-                          <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-xs px-2.5 py-1" />
+                          <QuickChat onSendMessage={handleSendMessage} userRole={userRole} />
+                          <VoiceControl />
                           
-                          {/* 观众也可以使用语音 */}
-                          <VoiceControl className="text-xs px-2.5 py-1" />
-                          
-                          <span className="text-yellow-400 text-xs px-2 py-1">
+                          <span className="text-yellow-400 px-3 py-2 flex items-center">
                             👁️ 观战模式
                           </span>
-                        </>
+                          
+                          <button
+                            onClick={handleLeaveRoom}
+                            className="pixel-btn bg-gray-600 hover:bg-gray-700 transition-all"
+                          >
+                            🚪 离开房间
+                          </button>
+                        </div>
                       ) : null}
-                      
-                      <button
-                        onClick={handleLeaveRoom}
-                        className="pixel-btn bg-red-600 hover:bg-red-700 text-xs px-2.5 py-1 transition-all"
-                      >
-                        离开房间
-                      </button>
                     </div>
                   </div>
                   
@@ -609,77 +620,86 @@ const GomokuGame = () => {
                   {/* 游戏棋盘 */}
                   <GameBoard />
                   
-                  {/* 控制按钮 - 紧贴棋盘 */}
-                  <div className="flex flex-wrap justify-center gap-0.5 mt-0.5 px-1 pb-2">
+                  {/* 控制按钮 - 紧贴棋盘，分两行显示 */}
+                  <div className="flex flex-col gap-1 mt-1 px-2 pb-2">
                     {userRole === 'player' ? (
                       <>
-                        <button
-                          onClick={handleRestart}
-                          disabled={pendingRestart || waitingForOpponentRestart}
-                          className={clsx(
-                            "pixel-btn text-[8px] px-1.5 py-0.5 transition-all",
-                            (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
-                          )}
-                        >
-                          {waitingForOpponentRestart || pendingRestart ? '等待' : '重开'}
-                        </button>
+                        {/* 第一行：核心游戏控制 */}
+                        <div className="flex justify-center gap-1">
+                          <button
+                            onClick={handleRestart}
+                            disabled={pendingRestart || waitingForOpponentRestart}
+                            className={clsx(
+                              "pixel-btn bg-green-600 text-[10px] px-2 py-1 transition-all",
+                              (pendingRestart || waitingForOpponentRestart) && "opacity-50 cursor-not-allowed"
+                            )}
+                          >
+                            {waitingForOpponentRestart || pendingRestart ? '⏳' : '🔄'} 重开
+                          </button>
+                          
+                          <button
+                            onClick={handleUndo}
+                            disabled={isUndoDisabled}
+                            className={clsx(
+                              "pixel-btn bg-blue-600 text-[10px] px-2 py-1 transition-all",
+                              isUndoDisabled && "opacity-50 cursor-not-allowed"
+                            )}
+                          >
+                            {pendingUndo ? '⏳' : '↩️'} 悔棋
+                          </button>
+                          
+                          <button
+                            onClick={handleSurrender}
+                            disabled={gameState !== 'playing'}
+                            className={clsx(
+                              "pixel-btn bg-red-600 text-[10px] px-2 py-1 transition-all",
+                              gameState !== 'playing' && "opacity-50 cursor-not-allowed"
+                            )}
+                          >
+                            🏳️ 认输
+                          </button>
+                        </div>
                         
-                        <button
-                          onClick={handleUndo}
-                          disabled={isUndoDisabled}
-                          className={clsx(
-                            "pixel-btn bg-blue-600 hover:bg-blue-700 text-[8px] px-1.5 py-0.5 transition-all",
-                            isUndoDisabled && "opacity-50 cursor-not-allowed hover:bg-blue-600"
-                          )}
-                        >
-                          {pendingUndo ? '等待' : '悔棋'}
-                        </button>
-                        
-                        <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-[8px] px-1.5 py-0.5" />
-                        
-                        {/* 语音控制按钮 */}
-                        <VoiceControl className="text-[8px] px-1.5 py-0.5" />
-                        
-                        <button
-                          onClick={handleSurrender}
-                          disabled={gameState !== 'playing'}
-                          className={clsx(
-                            "pixel-btn bg-red-600 hover:bg-red-700 text-[8px] px-1.5 py-0.5 transition-all",
-                            gameState !== 'playing' && "opacity-50 cursor-not-allowed hover:bg-red-600"
-                          )}
-                        >
-                          认输
-                        </button>
-                        
-                        <button
-                          onClick={handleToSpectator}
-                          className="pixel-btn bg-yellow-600 hover:bg-yellow-700 text-[8px] px-1.5 py-0.5 transition-all"
-                        >
-                          观众席
-                        </button>
+                        {/* 第二行：互动和其他功能 */}
+                        <div className="flex justify-center gap-1">
+                          <QuickChat onSendMessage={handleSendMessage} userRole={userRole} />
+                          <VoiceControl />
+                          
+                          <button
+                            onClick={handleToSpectator}
+                            className="pixel-btn bg-yellow-600 text-[10px] px-2 py-1 transition-all"
+                          >
+                            👁️ 观战
+                          </button>
+                          
+                          <button
+                            onClick={handleLeaveRoom}
+                            className="pixel-btn bg-gray-600 text-[10px] px-2 py-1 transition-all"
+                          >
+                            🚪 离开
+                          </button>
+                        </div>
                       </>
                     ) : userRole === 'spectator' ? (
-                      <>
+                      <div className="flex justify-center gap-1">
                         <button
                           onClick={handleBecomePlayer}
-                          className="pixel-btn bg-green-600 hover:bg-green-700 text-[8px] px-1.5 py-0.5 transition-all"
+                          className="pixel-btn bg-green-600 text-[10px] px-2 py-1 transition-all"
                         >
-                          成玩家
+                          🎮 玩家
                         </button>
                         
-                        <QuickChat onSendMessage={handleSendMessage} userRole={userRole} className="text-[8px] px-1.5 py-0.5" />
+                        <QuickChat onSendMessage={handleSendMessage} userRole={userRole} />
+                        <VoiceControl />
                         
-                        {/* 观众也可以使用语音 */}
-                        <VoiceControl className="text-[8px] px-1.5 py-0.5" />
-                      </>
+                        <button
+                          onClick={handleLeaveRoom}
+                          className="pixel-btn bg-gray-600 text-[10px] px-2 py-1 transition-all"
+                        >
+                          🚪 离开
+                        </button>
+                      </div>
                     ) : null}
-                    
-                    <button
-                      onClick={handleLeaveRoom}
-                      className="pixel-btn bg-red-600 hover:bg-red-700 text-[8px] px-1.5 py-0.5 transition-all"
-                    >
-                      离开
-                    </button>
                   </div>
                 </div>
               </div>
