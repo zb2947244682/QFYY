@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, RotateCcw, AlertCircle, CheckCircle, Lightbulb, Eraser } from 'lucide-react'
+import { ArrowLeft, RotateCcw, AlertCircle, Lightbulb, Eraser } from 'lucide-react'
 
 type Cell = {
   value: number | null
@@ -215,22 +215,6 @@ const SudokuGame = () => {
     return () => clearInterval(interval)
   }, [startTime])
 
-  // 键盘输入
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key >= '1' && e.key <= '9') {
-        handleNumberInput(parseInt(e.key))
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        handleClear()
-      } else if (e.key === 'n' || e.key === 'N') {
-        setNoteMode(!noteMode)
-      }
-    }
-    
-    window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [selectedCell, noteMode])
-
   // 格式化时间
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
@@ -238,194 +222,214 @@ const SudokuGame = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  // 获取单元格大小（根据屏幕尺寸自适应）
+  const getCellSize = () => {
+    if (typeof window !== 'undefined') {
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
+      const maxBoardSize = Math.min(screenWidth - 32, screenHeight * 0.5)
+      return Math.floor(maxBoardSize / 9)
+    }
+    return 40
+  }
+
+  const [cellSize, setCellSize] = useState(getCellSize())
+
+  useEffect(() => {
+    const handleResize = () => {
+      setCellSize(getCellSize())
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-900 to-gray-900 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-900 to-gray-900 flex flex-col p-2 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-4xl"
+        className="w-full max-w-lg mx-auto flex flex-col h-screen"
       >
-        {/* 游戏头部 */}
-        <div className="bg-gray-800/50 backdrop-blur rounded-t-xl p-4 border-t border-l border-r border-gray-700">
-          <div className="flex items-center justify-between mb-4">
+        {/* 游戏头部 - 精简版 */}
+        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-3 mb-2">
+          <div className="flex items-center justify-between mb-2">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+              className="p-2 text-gray-400 hover:text-white"
             >
               <ArrowLeft size={20} />
-              <span className="font-game">返回</span>
             </button>
-            <h1 className="text-2xl font-game font-bold text-white">数独</h1>
+            <h1 className="text-xl font-game font-bold text-white">数独</h1>
             <button
               onClick={() => newGame()}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="p-2 text-white"
             >
-              <RotateCcw size={16} />
-              <span className="font-game">新游戏</span>
+              <RotateCcw size={18} />
             </button>
           </div>
 
-          {/* 难度选择 */}
-          <div className="flex justify-center gap-2 mb-4">
-            {(['easy', 'medium', 'hard'] as Difficulty[]).map(level => (
-              <button
-                key={level}
-                onClick={() => newGame(level)}
-                className={`px-4 py-2 rounded-lg font-game transition-all ${
-                  difficulty === level
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'
-                }`}
-              >
-                {level === 'easy' ? '简单' : level === 'medium' ? '中等' : '困难'}
-              </button>
-            ))}
-          </div>
-
-          {/* 游戏信息 */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-              <div className="text-gray-400 text-sm font-game">时间</div>
-              <div className="text-xl font-bold text-white font-game">{formatTime(elapsedTime)}</div>
-            </div>
-            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-              <div className="text-gray-400 text-sm font-game flex items-center justify-center gap-1">
+          {/* 游戏信息 - 精简 */}
+          <div className="flex justify-between text-sm">
+            <div className="flex items-center gap-4">
+              <span className="text-gray-400">{formatTime(elapsedTime)}</span>
+              <span className="text-red-400 flex items-center gap-1">
                 <AlertCircle size={14} />
-                错误
-              </div>
-              <div className="text-xl font-bold text-red-400 font-game">{mistakes}</div>
-            </div>
-            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-              <div className="text-gray-400 text-sm font-game flex items-center justify-center gap-1">
+                {mistakes}
+              </span>
+              <span className="text-yellow-400 flex items-center gap-1">
                 <Lightbulb size={14} />
-                提示
-              </div>
-              <div className="text-xl font-bold text-yellow-400 font-game">{hints}</div>
+                {hints}
+              </span>
+            </div>
+            <div className="flex gap-1">
+              {(['easy', 'medium', 'hard'] as Difficulty[]).map(level => (
+                <button
+                  key={level}
+                  onClick={() => newGame(level)}
+                  className={`px-2 py-1 rounded text-xs ${
+                    difficulty === level
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-700 text-gray-400'
+                  }`}
+                >
+                  {level === 'easy' ? '易' : level === 'medium' ? '中' : '难'}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
         {/* 游戏区域 */}
-        <div className="bg-gray-900 border border-gray-700 p-6 rounded-b-xl">
-          <div className="flex flex-col lg:flex-row gap-6 items-center justify-center">
-            {/* 数独棋盘 */}
-            <div className="bg-gray-800 p-2 rounded-lg">
-              <div className="grid grid-cols-9 gap-0">
-                {board.map((row, rowIndex) => 
-                  row.map((cell, colIndex) => (
-                    <button
-                      key={`${rowIndex}-${colIndex}`}
-                      onClick={() => setSelectedCell({ row: rowIndex, col: colIndex })}
-                      className={`
-                        w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center relative
-                        ${cell.isFixed ? 'bg-gray-700' : 'bg-gray-900 hover:bg-gray-800'}
-                        ${selectedCell?.row === rowIndex && selectedCell?.col === colIndex ? 'bg-blue-900' : ''}
-                        ${cell.isError ? 'bg-red-900/50' : ''}
-                        ${colIndex % 3 === 2 && colIndex < 8 ? 'border-r-2 border-gray-600' : 'border-r border-gray-700'}
-                        ${rowIndex % 3 === 2 && rowIndex < 8 ? 'border-b-2 border-gray-600' : 'border-b border-gray-700'}
-                        transition-colors
-                      `}
-                      disabled={completed}
-                    >
-                      {cell.value ? (
-                        <span className={`
-                          text-lg sm:text-xl font-bold
-                          ${cell.isFixed ? 'text-gray-400' : cell.isError ? 'text-red-400' : 'text-white'}
-                        `}>
-                          {cell.value}
-                        </span>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-0 text-xs text-blue-400">
-                          {[1,2,3,4,5,6,7,8,9].map(n => (
-                            <span key={n} className="text-[8px]">
-                              {cell.notes.includes(n) ? n : ''}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* 控制面板 */}
-            <div className="space-y-4">
-              {/* 数字按钮 */}
-              <div className="grid grid-cols-3 gap-2">
-                {[1,2,3,4,5,6,7,8,9].map(num => (
+        <div className="flex-1 flex flex-col justify-center items-center">
+          {/* 数独棋盘 */}
+          <div className="bg-gray-800 p-1 rounded-lg mb-3">
+            <div 
+              className="grid grid-cols-9 gap-0"
+              style={{
+                width: `${cellSize * 9 + 8}px`,
+                height: `${cellSize * 9 + 8}px`
+              }}
+            >
+              {board.map((row, rowIndex) => 
+                row.map((cell, colIndex) => (
                   <button
-                    key={num}
-                    onClick={() => handleNumberInput(num)}
-                    className="w-14 h-14 bg-gray-700 hover:bg-gray-600 text-white text-xl font-bold rounded-lg transition-colors"
+                    key={`${rowIndex}-${colIndex}`}
+                    onClick={() => setSelectedCell({ row: rowIndex, col: colIndex })}
+                    className={`
+                      flex items-center justify-center relative transition-all
+                      ${cell.isFixed ? 'bg-gray-700' : 'bg-gray-900 active:scale-95'}
+                      ${selectedCell?.row === rowIndex && selectedCell?.col === colIndex ? 'bg-blue-800 ring-2 ring-blue-400' : ''}
+                      ${cell.isError ? 'bg-red-900/50' : ''}
+                      ${colIndex % 3 === 2 && colIndex < 8 ? 'border-r-2 border-gray-600' : colIndex < 8 ? 'border-r border-gray-800' : ''}
+                      ${rowIndex % 3 === 2 && rowIndex < 8 ? 'border-b-2 border-gray-600' : rowIndex < 8 ? 'border-b border-gray-800' : ''}
+                    `}
+                    style={{
+                      width: `${cellSize}px`,
+                      height: `${cellSize}px`
+                    }}
                     disabled={completed}
                   >
-                    {num}
+                    {cell.value ? (
+                      <span className={`
+                        font-bold
+                        ${cell.isFixed ? 'text-gray-400' : cell.isError ? 'text-red-400' : 'text-white'}
+                      `}
+                      style={{ fontSize: `${cellSize * 0.5}px` }}
+                      >
+                        {cell.value}
+                      </span>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-0 p-1">
+                        {[1,2,3,4,5,6,7,8,9].map(n => (
+                          <span 
+                            key={n} 
+                            className="text-blue-400"
+                            style={{ fontSize: `${cellSize * 0.2}px` }}
+                          >
+                            {cell.notes.includes(n) ? n : ''}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </button>
-                ))}
-              </div>
-
-              {/* 功能按钮 */}
-              <div className="space-y-2">
-                <button
-                  onClick={() => setNoteMode(!noteMode)}
-                  className={`w-full p-3 ${
-                    noteMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'
-                  } text-white rounded-lg transition-colors flex items-center justify-center gap-2`}
-                  disabled={completed}
-                >
-                  <span className="font-game">笔记模式</span>
-                  {noteMode && <CheckCircle size={16} />}
-                </button>
-                
-                <button
-                  onClick={handleClear}
-                  className="w-full p-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                  disabled={completed}
-                >
-                  <Eraser size={16} />
-                  <span className="font-game">清除</span>
-                </button>
-                
-                <button
-                  onClick={handleHint}
-                  className="w-full p-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                  disabled={completed || hints <= 0}
-                >
-                  <Lightbulb size={16} />
-                  <span className="font-game">提示 ({hints})</span>
-                </button>
-              </div>
+                ))
+              )}
             </div>
           </div>
 
-          {/* 完成提示 */}
-          {completed && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
-            >
-              <div className="bg-gray-800 p-8 rounded-xl border border-gray-700 text-center">
-                <h2 className="text-3xl font-game font-bold text-green-400 mb-4">🎉 完成!</h2>
-                <div className="space-y-2 mb-6">
-                  <p className="text-white font-game">
-                    用时: <span className="text-yellow-400">{formatTime(elapsedTime)}</span>
-                  </p>
-                  <p className="text-white font-game">
-                    错误: <span className="text-yellow-400">{mistakes}</span>
-                  </p>
-                </div>
+          {/* 控制面板 - 优化布局 */}
+          <div className="w-full max-w-sm">
+            {/* 数字按钮 */}
+            <div className="grid grid-cols-9 gap-1 mb-2">
+              {[1,2,3,4,5,6,7,8,9].map(num => (
                 <button
-                  onClick={() => newGame()}
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-game rounded-lg transition-colors"
+                  key={num}
+                  onClick={() => handleNumberInput(num)}
+                  className="aspect-square bg-gray-700 hover:bg-gray-600 active:scale-95 text-white font-bold rounded-lg transition-all text-lg"
+                  disabled={completed}
                 >
-                  新游戏
+                  {num}
                 </button>
-              </div>
-            </motion.div>
-          )}
+              ))}
+            </div>
+
+            {/* 功能按钮 */}
+            <div className="grid grid-cols-3 gap-1">
+              <button
+                onClick={() => setNoteMode(!noteMode)}
+                className={`p-2 ${
+                  noteMode ? 'bg-blue-600' : 'bg-gray-700'
+                } text-white rounded-lg transition-all active:scale-95 text-sm`}
+                disabled={completed}
+              >
+                笔记
+              </button>
+              
+              <button
+                onClick={handleClear}
+                className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all active:scale-95"
+                disabled={completed}
+              >
+                <Eraser size={16} className="mx-auto" />
+              </button>
+              
+              <button
+                onClick={handleHint}
+                className="p-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-all active:scale-95 text-sm"
+                disabled={completed || hints <= 0}
+              >
+                提示
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* 完成提示 */}
+        {completed && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          >
+            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center">
+              <h2 className="text-2xl font-game font-bold text-green-400 mb-3">🎉 完成!</h2>
+              <div className="space-y-1 mb-4">
+                <p className="text-white text-sm">
+                  用时: <span className="text-yellow-400">{formatTime(elapsedTime)}</span>
+                </p>
+                <p className="text-white text-sm">
+                  错误: <span className="text-yellow-400">{mistakes}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => newGame()}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              >
+                新游戏
+              </button>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   )
