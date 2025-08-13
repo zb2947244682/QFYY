@@ -307,8 +307,8 @@ const GomokuGame = () => {
    * 处理悔棋
    */
   const handleUndo = () => {
-    // 检查是否可以悔棋
-    if (!canUndo || currentPlayer !== myColor || history.length < 2) {
+    // 检查是否可以悔棋 - 只能在对方回合悔棋（撤回自己刚下的棋）
+    if (!canUndo || currentPlayer === myColor || history.length < 2) {
       addNotification('warning', '⚠️ 当前不能悔棋')
       return
     }
@@ -388,9 +388,9 @@ const GomokuGame = () => {
     spectatorToPlayer()
   }
 
-  // 判断悔棋按钮是否应该禁用
+  // 判断悔棋按钮是否应该禁用 - 只能在对方回合悔棋
   const isUndoDisabled = !canUndo || 
-                         currentPlayer !== myColor || 
+                         currentPlayer === myColor ||  // 自己回合时禁用
                          gameState !== 'playing' || 
                          pendingUndo || 
                          history.length < 2
