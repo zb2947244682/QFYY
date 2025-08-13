@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
-import { useGomokuStore } from '../store/gameStore'
+import { useGomokuStore, Cell, Player } from '../store/gameStore'
 
 let socketInstance: Socket | null = null
 let globalConnected = false
@@ -18,7 +18,8 @@ export const useSocket = () => {
     setWinningLine,
     setUserRole,
     userRole,
-    setOpponentNickname  // 添加设置对手昵称的方法
+    setOpponentNickname,  // 添加设置对手昵称的方法
+    setBlackWhiteNicknames  // 添加设置黑白双方昵称的方法
   } = useGomokuStore()
 
   useEffect(() => {
@@ -105,8 +106,8 @@ export const useSocket = () => {
         console.log('Game started for spectator, black:', data.blackPlayer, 'white:', data.whitePlayer)
         
         // 设置黑白双方昵称（对于观众）
-        if (data.blackNickname && data.whiteNickname) {
-          // 这里可以在需要时扩展存储双方昵称
+        if (data.blackNickname || data.whiteNickname) {
+          setBlackWhiteNicknames(data.blackNickname || null, data.whiteNickname || null)
         }
         
         initBoard()
@@ -278,6 +279,87 @@ export const useSocket = () => {
         console.log('Received opponent nickname:', data.nickname)
         setOpponentNickname(data.nickname)
       })
+      
+      // 接收所有用户昵称（用于观众和新加入的玩家）
+      socketInstance.on('all-nicknames', (nicknames: Record<string, string>) => {
+        console.log('Received all nicknames:', nicknames)
+        const myId = socketInstance?.id
+        if (!myId) return
+        
+        const store = useGomokuStore.getState()
+        
+        // 如果是玩家，找到对手的昵称
+        if (store.userRole === 'player') {
+          for (const [userId, nickname] of Object.entries(nicknames)) {
+            if (userId !== myId) {
+              setOpponentNickname(nickname)
+              break
+            }
+          }
+        }
+        // 如果是观众，可以存储所有玩家的昵称（后续扩展）
+      })
+      
+      // 用户昵称更新通知
+      socketInstance.on('user-nickname-update', (data: { userId: string, nickname: string }) => {
+        console.log('User nickname updated:', data.userId, data.nickname)
+        const myId = socketInstance?.id
+        if (!myId) return
+        
+        const store = useGomokuStore.getState()
+        
+        // 如果是玩家且更新的是对手
+        if (store.userRole === 'player' && data.userId !== myId) {
+          setOpponentNickname(data.nickname)
+        }
+      })
+      
+      // 观众同步游戏状态
+      socketInstance.on('sync-game-state', (data: {
+        gameState: {
+          board: number[][],
+          currentPlayer: number,
+          history: any[],
+          lastMove: { row: number, col: number } | null
+        },
+        blackPlayer: string,
+        whitePlayer: string,
+        blackNickname: string,
+        whiteNickname: string
+      }) => {
+        console.log('Syncing game state for spectator:', data)
+        const store = useGomokuStore.getState()
+        
+        // 只有观众处理这个事件
+        if (store.userRole !== 'spectator') return
+        
+        // 设置黑白双方昵称
+        setBlackWhiteNicknames(data.blackNickname, data.whiteNickname)
+        
+        // 同步棋盘状态
+        if (data.gameState && data.gameState.board) {
+          // 类型转换：将number[][]转换为Cell[][]
+          const board = data.gameState.board as Cell[][]
+          const currentPlayer = data.gameState.currentPlayer as Player
+          
+          useGomokuStore.setState({
+            board: board,
+            currentPlayer: currentPlayer,
+            lastMove: data.gameState.lastMove,
+            gameState: 'playing'
+          })
+          
+          // 重建历史记录（如果需要）
+          data.gameState.history.forEach((move: any) => {
+            const cellValue = board[move.row][move.col]
+            if (cellValue === 1 || cellValue === 2) {
+              store.addHistory(cellValue as Player, { row: move.row, col: move.col })
+            }
+          })
+        }
+        
+        console.log(`黑棋: ${data.blackNickname}, 白棋: ${data.whiteNickname}`)
+      })
     } else {
       // 如果socket实例已存在，同步连接状态
       setConnected(globalConnected)
@@ -286,7 +368,7 @@ export const useSocket = () => {
     return () => {
       // 不要在组件卸载时断开连接，保持全局连接
     }
-  }, [setGameState, setPlayerColor, initBoard, addNotification, nextRound, undoMove, setCanUndo, setWinningLine, setUserRole, userRole, setOpponentNickname])
+  }, [setGameState, setPlayerColor, initBoard, addNotification, nextRound, undoMove, setCanUndo, setWinningLine, setUserRole, userRole, setOpponentNickname, setBlackWhiteNicknames])
 
   // 发送落子信息的函数
   const sendMove = (roomId: string, row: number, col: number) => {

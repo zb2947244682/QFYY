@@ -42,6 +42,10 @@ interface GomokuStore {
   myNickname: string | null
   opponentNickname: string | null
   
+  // 观众模式下的双方昵称
+  blackNickname: string | null
+  whiteNickname: string | null
+  
   // 游戏历史
   history: GameHistory[]
   canUndo: boolean
@@ -90,6 +94,7 @@ interface GomokuStore {
   // 昵称相关动作
   setMyNickname: (nickname: string) => void
   setOpponentNickname: (nickname: string) => void
+  setBlackWhiteNicknames: (blackNickname: string | null, whiteNickname: string | null) => void
   generateRandomNickname: () => string
 }
 
@@ -128,6 +133,10 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
   // 玩家昵称
   myNickname: null,
   opponentNickname: null,
+  
+  // 观众模式下的双方昵称
+  blackNickname: null,
+  whiteNickname: null,
   
   // 游戏历史
   history: [],
@@ -253,7 +262,9 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
       userRole: null,
       spectatorCount: 0,
       myNickname: null,
-      opponentNickname: null
+      opponentNickname: null,
+      blackNickname: null,
+      whiteNickname: null
     })
   },
 
@@ -440,6 +451,11 @@ export const useGomokuStore = create<GomokuStore>((set, get) => ({
   // 设置对手昵称
   setOpponentNickname: (nickname) => {
     set({ opponentNickname: nickname })
+  },
+  
+  // 设置黑白双方昵称（观众模式）
+  setBlackWhiteNicknames: (blackNickname, whiteNickname) => {
+    set({ blackNickname, whiteNickname })
   },
   
   // 生成随机昵称
