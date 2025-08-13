@@ -197,18 +197,23 @@ const BreakoutGame = () => {
       ball.dy = -ball.dy
     }
     
-    // 球与砖块碰撞
+    // 球与砖块碰撞 - 改进的碰撞检测
     let allDestroyed = true
     bricks.forEach(brick => {
       if (!brick.destroyed) {
         allDestroyed = false
-        if (
-          ball.x > brick.x &&
-          ball.x < brick.x + brick.width &&
-          ball.y > brick.y &&
-          ball.y < brick.y + brick.height
-        ) {
-          ball.dy = -ball.dy
+        
+        // 计算球心到砖块最近的点
+        const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.width))
+        const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.height))
+        
+        // 计算距离
+        const distanceX = ball.x - closestX
+        const distanceY = ball.y - closestY
+        const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY)
+        
+        // 如果球与砖块碰撞
+        if (distance < ball.radius) {
           brick.hits--
           
           if (brick.hits <= 0) {
@@ -218,6 +223,35 @@ const BreakoutGame = () => {
             // 降低砖块颜色强度表示损坏
             const alpha = brick.hits / BRICK_COLORS.find(c => c.color === brick.color)!.hits
             brick.color = brick.color + Math.floor(alpha * 255).toString(16).padStart(2, '0')
+          }
+          
+          // 改进的反弹逻辑
+          // 判断碰撞方向
+          const overlapLeft = ball.x + ball.radius - brick.x
+          const overlapRight = brick.x + brick.width - (ball.x - ball.radius)
+          const overlapTop = ball.y + ball.radius - brick.y
+          const overlapBottom = brick.y + brick.height - (ball.y - ball.radius)
+          
+          // 找出最小的重叠
+          const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom)
+          
+          // 根据最小重叠确定反弹方向
+          if (minOverlap === overlapLeft || minOverlap === overlapRight) {
+            ball.dx = -ball.dx
+            // 稍微调整位置以避免卡住
+            if (minOverlap === overlapLeft) {
+              ball.x = brick.x - ball.radius - 1
+            } else {
+              ball.x = brick.x + brick.width + ball.radius + 1
+            }
+          } else {
+            ball.dy = -ball.dy
+            // 稍微调整位置以避免卡住
+            if (minOverlap === overlapTop) {
+              ball.y = brick.y - ball.radius - 1
+            } else {
+              ball.y = brick.y + brick.height + ball.radius + 1
+            }
           }
         }
       }

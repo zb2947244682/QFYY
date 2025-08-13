@@ -210,11 +210,11 @@ const SnakeGame = () => {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex flex-col p-2 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex flex-col p-2">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl mx-auto flex flex-col h-screen"
+        className="w-full max-w-2xl mx-auto flex flex-col min-h-screen"
       >
         {/* 游戏头部 - 精简版 */}
         <div className="bg-gray-800/50 backdrop-blur rounded-xl p-3 mb-2">
@@ -247,8 +247,8 @@ const SnakeGame = () => {
           </div>
         </div>
 
-        {/* 游戏区域 */}
-        <div className="flex-1 flex flex-col items-center justify-center">
+        {/* 游戏区域 - 调整为自适应布局 */}
+        <div className="flex-1 flex flex-col items-center justify-start">
           <div 
             ref={gameRef}
             className="relative bg-gray-800 rounded-lg p-1"
@@ -354,14 +354,14 @@ const SnakeGame = () => {
             </div>
           </div>
 
-          {/* 控制按钮 - 移动端优化 */}
-          <div className="mt-4 w-full max-w-xs">
+          {/* 控制按钮 - 移动端优化，添加z-index确保按钮在最上层 */}
+          <div className="mt-4 w-full max-w-xs relative z-50">
             {/* 方向控制 - 十字键布局 */}
             <div className="grid grid-cols-3 gap-2">
               <div />
               <button
                 onClick={() => changeDirection('UP')}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center relative z-50"
                 disabled={!isPlaying || gameOver}
               >
                 <ChevronUp size={24} />
@@ -370,7 +370,7 @@ const SnakeGame = () => {
               
               <button
                 onClick={() => changeDirection('LEFT')}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center relative z-50"
                 disabled={!isPlaying || gameOver}
               >
                 <ChevronLeftIcon size={24} />
@@ -380,7 +380,7 @@ const SnakeGame = () => {
                 onClick={() => setIsPlaying(!isPlaying)}
                 className={`p-4 ${
                   isPlaying ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'
-                } text-white rounded-lg transition-all active:scale-95 flex items-center justify-center`}
+                } text-white rounded-lg transition-all active:scale-95 flex items-center justify-center relative z-50`}
                 disabled={gameOver}
               >
                 {isPlaying ? <Pause size={20} /> : <Play size={20} />}
@@ -388,7 +388,7 @@ const SnakeGame = () => {
               
               <button
                 onClick={() => changeDirection('RIGHT')}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center relative z-50"
                 disabled={!isPlaying || gameOver}
               >
                 <ChevronRight size={24} />
@@ -397,7 +397,7 @@ const SnakeGame = () => {
               <div />
               <button
                 onClick={() => changeDirection('DOWN')}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center relative z-50"
                 disabled={!isPlaying || gameOver}
               >
                 <ChevronDown size={24} />
