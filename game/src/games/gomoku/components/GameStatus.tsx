@@ -20,7 +20,9 @@ const GameStatus = ({ side }: GameStatusProps) => {
     winner,
     userRole,  // 添加用户角色
     myNickname,  // 添加我的昵称
-    opponentNickname  // 添加对手昵称
+    opponentNickname,  // 添加对手昵称
+    blackNickname,  // 观众模式下的黑棋昵称
+    whiteNickname   // 观众模式下的白棋昵称
   } = useGomokuStore()
   
   // 根据用户角色决定显示逻辑
@@ -50,6 +52,11 @@ const GameStatus = ({ side }: GameStatusProps) => {
           {!isSpectator && myNickname && (
             <div className="text-xs text-yellow-300 font-game truncate max-w-full px-1">
               {myNickname}
+            </div>
+          )}
+          {isSpectator && blackNickname && (
+            <div className="text-xs text-yellow-300 font-game truncate max-w-full px-1">
+              {blackNickname}
             </div>
           )}
           
@@ -130,10 +137,15 @@ const GameStatus = ({ side }: GameStatusProps) => {
             isActive={gameState === 'playing' && currentPlayer === rightColor}
           />
           
-          {/* 显示对手昵称 */}
+          {/* 显示昵称 */}
           {!isSpectator && opponentNickname && (
             <div className="text-xs text-yellow-300 font-game truncate max-w-full px-1">
               {opponentNickname}
+            </div>
+          )}
+          {isSpectator && whiteNickname && (
+            <div className="text-xs text-yellow-300 font-game truncate max-w-full px-1">
+              {whiteNickname}
             </div>
           )}
           
@@ -240,7 +252,7 @@ const GameStatus = ({ side }: GameStatusProps) => {
             />
             <div className="flex flex-col">
               <span className="text-[8px] text-gray-400">
-                {isSpectator ? '黑方' : '你'}
+                {isSpectator ? (blackNickname || '黑方') : (myNickname || '你')}
               </span>
               <div className="flex items-center gap-0.5">
                 <span className="font-game text-xs text-white">
@@ -293,7 +305,7 @@ const GameStatus = ({ side }: GameStatusProps) => {
           <div className="flex items-center gap-0.5">
             <div className="flex flex-col items-end">
               <span className="text-[8px] text-gray-400">
-                {isSpectator ? '白方' : '对手'}
+                {isSpectator ? (whiteNickname || '白方') : (opponentNickname || '对手')}
               </span>
               <div className="flex items-center gap-0.5">
                 <span className="text-[10px] text-gray-400">

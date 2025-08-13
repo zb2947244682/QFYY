@@ -110,7 +110,19 @@ class RoomManager {
             players: [hostSocketId],
             spectators: [], // 观众列表
             readyPlayers: [],
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            // 新增：昵称存储
+            nicknames: {},
+            // 新增：游戏状态存储（用于观众同步）
+            gameState: {
+                board: null,  // 棋盘状态
+                currentPlayer: 1,  // 当前玩家
+                history: [],  // 历史记录
+                lastMove: null  // 最后一步
+            },
+            // 新增：记录黑白棋玩家
+            blackPlayer: null,
+            whitePlayer: null
         };
         
         this.rooms.set(roomId, room);
@@ -538,6 +550,36 @@ io.on('connection', (socket) => {
             
             console.log(`客户端 ${socket.id} 以观众身份加入房间成功`);
             
+            // 发送房间内所有昵称给观众
+            const room = result.room;
+            const allNicknames = {};
+            [...room.players, ...room.spectators].forEach(id => {
+                if (room.nicknames[id]) {
+                    allNicknames[id] = room.nicknames[id];
+                }
+            });
+            socket.emit('all-nicknames', allNicknames);
+            
+            // 如果游戏已经开始，同步游戏状态给观众
+            if (room.gameStarted && room.gameState) {
+                // 获取黑白棋玩家信息
+                const blackPlayer = room.blackPlayer || room.players[0];
+                const whitePlayer = room.whitePlayer || room.players[1];
+                const blackNickname = room.nicknames[blackPlayer] || null;
+                const whiteNickname = room.nicknames[whitePlayer] || null;
+                
+                // 发送当前游戏状态
+                socket.emit('sync-game-state', {
+                    gameState: room.gameState,
+                    blackPlayer: blackPlayer,
+                    whitePlayer: whitePlayer,
+                    blackNickname: blackNickname,
+                    whiteNickname: whiteNickname
+                });
+                
+                console.log(`同步游戏状态给观众 ${socket.id}`);
+            }
+            
             // 通知房间内所有玩家有观众加入
             socket.to(roomId).emit('spectator-joined', {
                 spectatorId: socket.id
@@ -696,6 +738,42 @@ io.on('connection', (socket) => {
     });
     
     /**
+     * 设置昵称事件处理
+     */
+    socket.on('set-nickname', (data) => {
+        const { roomId, nickname } = data;
+        console.log(`设置昵称: ${socket.id} -> ${nickname} in room ${roomId}`);
+        
+        const room = roomManager.getRoom(roomId);
+        if (!room) {
+            console.log(`设置昵称失败：房间 ${roomId} 不存在`);
+            return;
+        }
+        
+        // 存储昵称
+        room.nicknames[socket.id] = nickname;
+        
+        // 通知房间内其他人更新昵称
+        socket.to(roomId).emit('user-nickname-update', {
+            userId: socket.id,
+            nickname: nickname
+        });
+        
+        // 获取房间内所有昵称并广播
+        const allNicknames = {};
+        [...room.players, ...room.spectators].forEach(id => {
+            if (room.nicknames[id]) {
+                allNicknames[id] = room.nicknames[id];
+            }
+        });
+        
+        // 发送所有昵称给当前用户
+        socket.emit('all-nicknames', allNicknames);
+        
+        console.log(`房间 ${roomId} 当前昵称:`, room.nicknames);
+    });
+    
+    /**
      * 玩家准备事件处理
      */
     socket.on('ready-to-play', (data) => {
@@ -706,6 +784,14 @@ io.on('connection', (socket) => {
             // 标记游戏已开始
             room.gameStarted = true;
             
+            // 重置游戏状态
+            room.gameState = {
+                board: Array(13).fill(null).map(() => Array(13).fill(0)),
+                currentPlayer: 1,
+                history: [],
+                lastMove: null
+            };
+            
             // 所有玩家都准备好了，开始游戏
             const players = room.players;
             
@@ -713,25 +799,38 @@ io.on('connection', (socket) => {
             const blackIndex = Math.floor(Math.random() * 2);
             const whiteIndex = 1 - blackIndex;
             
-            console.log(`游戏开始: 房间 ${room.id}, 黑棋: ${players[blackIndex]}, 白棋: ${players[whiteIndex]}`);
+            // 记录黑白棋玩家
+            room.blackPlayer = players[blackIndex];
+            room.whitePlayer = players[whiteIndex];
+            
+            // 获取玩家昵称
+            const blackNickname = room.nicknames[players[blackIndex]] || null;
+            const whiteNickname = room.nicknames[players[whiteIndex]] || null;
+            
+            console.log(`游戏开始: 房间 ${room.id}, 黑棋: ${players[blackIndex]}(${blackNickname}), 白棋: ${players[whiteIndex]}(${whiteNickname})`);
             
             // 通知黑棋玩家
             io.to(players[blackIndex]).emit('game-start', {
                 playerColor: 1, // 黑棋
-                opponentId: players[whiteIndex]
+                opponentId: players[whiteIndex],
+                opponentNickname: whiteNickname  // 发送对手昵称
             });
             
             // 通知白棋玩家
             io.to(players[whiteIndex]).emit('game-start', {
                 playerColor: 2, // 白棋
-                opponentId: players[blackIndex]
+                opponentId: players[blackIndex],
+                opponentNickname: blackNickname  // 发送对手昵称
             });
             
             // 通知所有观众游戏开始
             room.spectators.forEach(spectatorId => {
                 io.to(spectatorId).emit('game-start-spectator', {
                     blackPlayer: players[blackIndex],
-                    whitePlayer: players[whiteIndex]
+                    whitePlayer: players[whiteIndex],
+                    blackNickname: blackNickname,  // 发送黑棋昵称
+                    whiteNickname: whiteNickname,  // 发送白棋昵称
+                    gameState: room.gameState  // 发送初始游戏状态
                 });
             });
             
@@ -847,6 +946,14 @@ io.on('connection', (socket) => {
         
         console.log(`落子: 房间 ${roomId}, 玩家 ${socket.id}, 位置 (${row}, ${col})`);
         
+        // 更新房间的游戏状态
+        if (room.gameState && room.gameState.board) {
+            room.gameState.board[row][col] = room.gameState.currentPlayer;
+            room.gameState.currentPlayer = room.gameState.currentPlayer === 1 ? 2 : 1;
+            room.gameState.lastMove = { row, col };
+            room.gameState.history.push({ row, col, player: socket.id });
+        }
+        
         // 广播给对手
         const opponent = room.players.find(p => p !== socket.id);
         if (opponent) {
@@ -927,6 +1034,53 @@ io.on('connection', (socket) => {
     socket.on('accept-restart', (data) => {
         const { roomId } = data;
         console.log(`客户端 ${socket.id} 同意重新开始: 房间 ${roomId}`);
+        
+        const room = roomManager.getRoom(roomId);
+        if (room && room.players.length === 2) {
+            // 重置游戏状态
+            room.gameState = {
+                board: Array(13).fill(null).map(() => Array(13).fill(0)),
+                currentPlayer: 1,
+                history: [],
+                lastMove: null
+            };
+            
+            // 重新分配黑白棋（可以交换或随机）
+            const players = room.players;
+            const blackIndex = Math.floor(Math.random() * 2);
+            const whiteIndex = 1 - blackIndex;
+            
+            room.blackPlayer = players[blackIndex];
+            room.whitePlayer = players[whiteIndex];
+            
+            const blackNickname = room.nicknames[players[blackIndex]] || null;
+            const whiteNickname = room.nicknames[players[whiteIndex]] || null;
+            
+            // 通知黑棋玩家
+            io.to(players[blackIndex]).emit('game-start', {
+                playerColor: 1,
+                opponentId: players[whiteIndex],
+                opponentNickname: whiteNickname
+            });
+            
+            // 通知白棋玩家
+            io.to(players[whiteIndex]).emit('game-start', {
+                playerColor: 2,
+                opponentId: players[blackIndex],
+                opponentNickname: blackNickname
+            });
+            
+            // 通知观众
+            room.spectators.forEach(spectatorId => {
+                io.to(spectatorId).emit('game-start-spectator', {
+                    blackPlayer: players[blackIndex],
+                    whitePlayer: players[whiteIndex],
+                    blackNickname: blackNickname,
+                    whiteNickname: whiteNickname,
+                    gameState: room.gameState
+                });
+            });
+        }
         
         // 通知所有玩家游戏重新开始
         io.to(roomId).emit('game-restart');
