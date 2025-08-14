@@ -193,7 +193,12 @@ const SnakeGame = () => {
     if (typeof window !== 'undefined') {
       const screenWidth = window.innerWidth
       const screenHeight = window.innerHeight
-      const maxSize = Math.min(screenWidth - 32, screenHeight * 0.5, 400)
+      // 考虑头部信息和控制按钮的空间，更精确计算可用空间
+      const headerHeight = 120 // 头部区域高度
+      const controlsHeight = 180 // 控制按钮区域高度
+      const padding = 32 // 边距
+      const availableHeight = screenHeight - headerHeight - controlsHeight - padding
+      const maxSize = Math.min(screenWidth - padding, availableHeight, 400)
       return Math.floor(maxSize / GRID_SIZE)
     }
     return 16
@@ -210,14 +215,14 @@ const SnakeGame = () => {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex flex-col p-2">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex flex-col p-2 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl mx-auto flex flex-col min-h-screen"
+        className="w-full max-w-2xl mx-auto flex flex-col h-screen"
       >
         {/* 游戏头部 - 精简版 */}
-        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-3 mb-2">
+        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-3 mb-2 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <button
               onClick={() => navigate('/')}
@@ -248,7 +253,7 @@ const SnakeGame = () => {
         </div>
 
         {/* 游戏区域 - 调整为自适应布局 */}
-        <div className="flex-1 flex flex-col items-center justify-start">
+        <div className="flex-1 flex flex-col items-center justify-center min-h-0">
           <div 
             ref={gameRef}
             className="relative bg-gray-800 rounded-lg p-1"
@@ -279,14 +284,15 @@ const SnakeGame = () => {
                   key={index}
                   className={`absolute ${
                     index === 0 
-                      ? 'bg-gradient-to-br from-green-400 to-green-600 z-20' 
-                      : 'bg-gradient-to-br from-green-500 to-green-700 z-10'
+                      ? 'bg-gradient-to-br from-green-400 to-green-600' 
+                      : 'bg-gradient-to-br from-green-500 to-green-700'
                   } rounded-sm`}
                   style={{
                     left: `${segment.x * cellSize}px`,
                     top: `${segment.y * cellSize}px`,
                     width: `${cellSize - 2}px`,
                     height: `${cellSize - 2}px`,
+                    zIndex: 1,
                   }}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -296,12 +302,13 @@ const SnakeGame = () => {
 
               {/* 食物 */}
               <motion.div
-                className="absolute bg-gradient-to-br from-red-400 to-red-600 rounded-full z-30"
+                className="absolute bg-gradient-to-br from-red-400 to-red-600 rounded-full"
                 style={{
                   left: `${food.x * cellSize + 2}px`,
                   top: `${food.y * cellSize + 2}px`,
                   width: `${cellSize - 4}px`,
                   height: `${cellSize - 4}px`,
+                  zIndex: 2,
                 }}
                 animate={{
                   scale: [1, 1.2, 1],
@@ -318,6 +325,7 @@ const SnakeGame = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-lg flex items-center justify-center"
+                  style={{ zIndex: 10 }}
                 >
                   <div className="text-center p-4">
                     {gameOver ? (
@@ -355,52 +363,52 @@ const SnakeGame = () => {
           </div>
 
           {/* 控制按钮 - 移动端优化，添加z-index确保按钮在最上层 */}
-          <div className="mt-4 w-full max-w-xs relative z-50">
+          <div className="mt-4 w-full max-w-xs flex-shrink-0">
             {/* 方向控制 - 十字键布局 */}
             <div className="grid grid-cols-3 gap-2">
               <div />
               <button
                 onClick={() => changeDirection('UP')}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center relative z-50"
+                className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronUp size={24} />
+                <ChevronUp size={20} />
               </button>
               <div />
               
               <button
                 onClick={() => changeDirection('LEFT')}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center relative z-50"
+                className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronLeftIcon size={24} />
+                <ChevronLeftIcon size={20} />
               </button>
               
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className={`p-4 ${
+                className={`p-3 ${
                   isPlaying ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'
-                } text-white rounded-lg transition-all active:scale-95 flex items-center justify-center relative z-50`}
+                } text-white rounded-lg transition-all active:scale-95 flex items-center justify-center`}
                 disabled={gameOver}
               >
-                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                {isPlaying ? <Pause size={18} /> : <Play size={18} />}
               </button>
               
               <button
                 onClick={() => changeDirection('RIGHT')}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center relative z-50"
+                className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronRight size={24} />
+                <ChevronRight size={20} />
               </button>
               
               <div />
               <button
                 onClick={() => changeDirection('DOWN')}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center relative z-50"
+                className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronDown size={24} />
+                <ChevronDown size={20} />
               </button>
               <div />
             </div>

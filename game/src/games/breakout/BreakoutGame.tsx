@@ -542,9 +542,16 @@ const BreakoutGame = () => {
                 onMouseDown={() => startMovingPaddle('left')}
                 onMouseUp={stopMovingPaddle}
                 onMouseLeave={stopMovingPaddle}
-                onTouchStart={() => startMovingPaddle('left')}
-                onTouchEnd={stopMovingPaddle}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                onTouchStart={(e) => {
+                  e.preventDefault()
+                  startMovingPaddle('left')
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault()
+                  stopMovingPaddle()
+                }}
+                onTouchCancel={stopMovingPaddle}
+                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center touch-none"
                 disabled={!isPlaying || gameOver}
               >
                 <ChevronLeft size={24} />
@@ -564,9 +571,16 @@ const BreakoutGame = () => {
                 onMouseDown={() => startMovingPaddle('right')}
                 onMouseUp={stopMovingPaddle}
                 onMouseLeave={stopMovingPaddle}
-                onTouchStart={() => startMovingPaddle('right')}
-                onTouchEnd={stopMovingPaddle}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                onTouchStart={(e) => {
+                  e.preventDefault()
+                  startMovingPaddle('right')
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault()
+                  stopMovingPaddle()
+                }}
+                onTouchCancel={stopMovingPaddle}
+                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center touch-none"
                 disabled={!isPlaying || gameOver}
               >
                 <ChevronRight size={24} />
