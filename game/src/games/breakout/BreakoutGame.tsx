@@ -83,7 +83,7 @@ const BreakoutGame = () => {
   const [movingDirection, setMovingDirection] = useState<'left' | 'right' | null>(null)
   const leftButtonRef = useRef<HTMLButtonElement>(null)
   const rightButtonRef = useRef<HTMLButtonElement>(null)
-  const moveIntervalRef = useRef<number | null>(null)
+  const moveAnimationRef = useRef<number | null>(null)
 
   // 初始化砖块
   const initBricks = useCallback(() => {
@@ -327,9 +327,9 @@ const BreakoutGame = () => {
   useEffect(() => {
     return () => {
       setMovingDirection(null)
-      if (moveIntervalRef.current) {
-        clearInterval(moveIntervalRef.current)
-        moveIntervalRef.current = null
+      if (moveAnimationRef.current) {
+        cancelAnimationFrame(moveAnimationRef.current)
+        moveAnimationRef.current = null
       }
     }
   }, [])
@@ -356,37 +356,49 @@ const BreakoutGame = () => {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [isPlaying, gameOver])
 
-  // 持续移动挡板（优化移动速度和响应）
+  // 持续移动挡板（使用requestAnimationFrame实现平滑移动）
   useEffect(() => {
     if (!isPlaying || gameOver || !movingDirection) {
-      if (moveIntervalRef.current) {
-        clearInterval(moveIntervalRef.current)
-        moveIntervalRef.current = null
+      if (moveAnimationRef.current) {
+        cancelAnimationFrame(moveAnimationRef.current)
+        moveAnimationRef.current = null
       }
       return
     }
     
-    // 立即执行一次移动
-    setPaddle(prev => ({
-      ...prev,
-      x: movingDirection === 'left' 
-        ? Math.max(0, prev.x - 15)
-        : Math.min(CANVAS_WIDTH - PADDLE_WIDTH, prev.x + 15)
-    }))
+    const moveSpeed = 5 // 每帧移动的像素数，减小以获得更平滑的效果
+    let lastTime = performance.now()
     
-    moveIntervalRef.current = window.setInterval(() => {
+    const animateMove = (currentTime: number) => {
+      if (!isPlaying || gameOver || !movingDirection) {
+        moveAnimationRef.current = null
+        return
+      }
+      
+      // 计算时间增量，实现帧率无关的移动
+      const deltaTime = currentTime - lastTime
+      lastTime = currentTime
+      
+      // 根据时间增量计算移动距离，目标速度约为300像素/秒
+      const moveDistance = (moveSpeed * deltaTime) / 16.67 // 16.67ms ≈ 60fps
+      
       setPaddle(prev => ({
         ...prev,
         x: movingDirection === 'left' 
-          ? Math.max(0, prev.x - 15)
-          : Math.min(CANVAS_WIDTH - PADDLE_WIDTH, prev.x + 15)
+          ? Math.max(0, prev.x - moveDistance)
+          : Math.min(CANVAS_WIDTH - PADDLE_WIDTH, prev.x + moveDistance)
       }))
-    }, 20)
+      
+      moveAnimationRef.current = requestAnimationFrame(animateMove)
+    }
+    
+    // 立即开始动画
+    moveAnimationRef.current = requestAnimationFrame(animateMove)
     
     return () => {
-      if (moveIntervalRef.current) {
-        clearInterval(moveIntervalRef.current)
-        moveIntervalRef.current = null
+      if (moveAnimationRef.current) {
+        cancelAnimationFrame(moveAnimationRef.current)
+        moveAnimationRef.current = null
       }
     }
   }, [isPlaying, gameOver, movingDirection])
