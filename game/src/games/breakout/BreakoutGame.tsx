@@ -81,6 +81,9 @@ const BreakoutGame = () => {
   
   const [bricks, setBricks] = useState<Brick[]>([])
   const [movingDirection, setMovingDirection] = useState<'left' | 'right' | null>(null)
+  const leftButtonRef = useRef<HTMLButtonElement>(null)
+  const rightButtonRef = useRef<HTMLButtonElement>(null)
+  const moveIntervalRef = useRef<number | null>(null)
 
   // 初始化砖块
   const initBricks = useCallback(() => {
@@ -324,6 +327,10 @@ const BreakoutGame = () => {
   useEffect(() => {
     return () => {
       setMovingDirection(null)
+      if (moveIntervalRef.current) {
+        clearInterval(moveIntervalRef.current)
+        moveIntervalRef.current = null
+      }
     }
   }, [])
 
@@ -351,28 +358,71 @@ const BreakoutGame = () => {
 
   // 持续移动挡板（优化移动速度和响应）
   useEffect(() => {
-    if (!isPlaying || gameOver || !movingDirection) return
+    if (!isPlaying || gameOver || !movingDirection) {
+      if (moveIntervalRef.current) {
+        clearInterval(moveIntervalRef.current)
+        moveIntervalRef.current = null
+      }
+      return
+    }
     
-    const moveInterval = setInterval(() => {
+    // 立即执行一次移动
+    setPaddle(prev => ({
+      ...prev,
+      x: movingDirection === 'left' 
+        ? Math.max(0, prev.x - 15)
+        : Math.min(CANVAS_WIDTH - PADDLE_WIDTH, prev.x + 15)
+    }))
+    
+    moveIntervalRef.current = window.setInterval(() => {
       setPaddle(prev => ({
         ...prev,
         x: movingDirection === 'left' 
-          ? Math.max(0, prev.x - 15) // 增加移动速度
+          ? Math.max(0, prev.x - 15)
           : Math.min(CANVAS_WIDTH - PADDLE_WIDTH, prev.x + 15)
       }))
-    }, 20) // 减少间隔时间，使移动更流畅
+    }, 20)
     
-    return () => clearInterval(moveInterval)
+    return () => {
+      if (moveIntervalRef.current) {
+        clearInterval(moveIntervalRef.current)
+        moveIntervalRef.current = null
+      }
+    }
   }, [isPlaying, gameOver, movingDirection])
 
   // 移动挡板控制函数
-  const startMovingPaddle = (direction: 'left' | 'right') => {
+  const startMovingPaddle = (direction: 'left' | 'right', button: HTMLButtonElement | null) => {
     if (!isPlaying || gameOver) return
     setMovingDirection(direction)
+    
+    // 捕获指针以确保持续接收事件
+    if (button && 'setPointerCapture' in button) {
+      const pointerId = (window as any).currentPointerId
+      if (pointerId !== undefined) {
+        try {
+          button.setPointerCapture(pointerId)
+        } catch (e) {
+          console.log('Pointer capture failed:', e)
+        }
+      }
+    }
   }
 
-  const stopMovingPaddle = () => {
+  const stopMovingPaddle = (button: HTMLButtonElement | null) => {
     setMovingDirection(null)
+    
+    // 释放指针捕获
+    if (button && 'releasePointerCapture' in button) {
+      const pointerId = (window as any).currentPointerId
+      if (pointerId !== undefined) {
+        try {
+          button.releasePointerCapture(pointerId)
+        } catch (e) {
+          console.log('Pointer release failed:', e)
+        }
+      }
+    }
   }
 
   // 点击控制 - 点击画布左右两侧
@@ -546,20 +596,28 @@ const BreakoutGame = () => {
           <div className="mt-4 w-full max-w-xs">
             <div className="grid grid-cols-3 gap-2">
               <button
-                onMouseDown={() => startMovingPaddle('left')}
-                onMouseUp={stopMovingPaddle}
-                onMouseLeave={stopMovingPaddle}
-                onTouchStart={(e) => {
-                  e.preventDefault()
-                  startMovingPaddle('left')
+                ref={leftButtonRef}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  (window as any).currentPointerId = e.pointerId
+                  startMovingPaddle('left', leftButtonRef.current)
                 }}
-                onTouchEnd={(e) => {
-                  e.preventDefault()
-                  stopMovingPaddle()
+                onPointerUp={(e) => {
+                  e.preventDefault();
+                  (window as any).currentPointerId = e.pointerId
+                  stopMovingPaddle(leftButtonRef.current)
                 }}
-                onTouchCancel={(e) => {
-                  e.preventDefault()
-                  stopMovingPaddle()
+                onPointerCancel={(e) => {
+                  e.preventDefault();
+                  (window as any).currentPointerId = e.pointerId
+                  stopMovingPaddle(leftButtonRef.current)
+                }}
+                onPointerLeave={(e) => {
+                  e.preventDefault();
+                  // 只有在没有捕获指针时才停止
+                  if (!leftButtonRef.current?.hasPointerCapture?.(e.pointerId)) {
+                    stopMovingPaddle(leftButtonRef.current)
+                  }
                 }}
                 className="p-4 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white rounded-lg transition-all flex items-center justify-center touch-none select-none"
                 disabled={!isPlaying || gameOver}
@@ -578,20 +636,28 @@ const BreakoutGame = () => {
               </button>
               
               <button
-                onMouseDown={() => startMovingPaddle('right')}
-                onMouseUp={stopMovingPaddle}
-                onMouseLeave={stopMovingPaddle}
-                onTouchStart={(e) => {
-                  e.preventDefault()
-                  startMovingPaddle('right')
+                ref={rightButtonRef}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  (window as any).currentPointerId = e.pointerId
+                  startMovingPaddle('right', rightButtonRef.current)
                 }}
-                onTouchEnd={(e) => {
-                  e.preventDefault()
-                  stopMovingPaddle()
+                onPointerUp={(e) => {
+                  e.preventDefault();
+                  (window as any).currentPointerId = e.pointerId
+                  stopMovingPaddle(rightButtonRef.current)
                 }}
-                onTouchCancel={(e) => {
-                  e.preventDefault()
-                  stopMovingPaddle()
+                onPointerCancel={(e) => {
+                  e.preventDefault();
+                  (window as any).currentPointerId = e.pointerId
+                  stopMovingPaddle(rightButtonRef.current)
+                }}
+                onPointerLeave={(e) => {
+                  e.preventDefault();
+                  // 只有在没有捕获指针时才停止
+                  if (!rightButtonRef.current?.hasPointerCapture?.(e.pointerId)) {
+                    stopMovingPaddle(rightButtonRef.current)
+                  }
                 }}
                 className="p-4 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white rounded-lg transition-all flex items-center justify-center touch-none select-none"
                 disabled={!isPlaying || gameOver}
