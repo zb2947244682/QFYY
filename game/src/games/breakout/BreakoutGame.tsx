@@ -54,7 +54,6 @@ const BreakoutGame = () => {
   const navigate = useNavigate()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()
-  const moveIntervalRef = useRef<number>()
   const [isPlaying, setIsPlaying] = useState(false)
   const [gameOver, setGameOver] = useState(false)
   const [score, setScore] = useState(0)
@@ -81,6 +80,7 @@ const BreakoutGame = () => {
   })
   
   const [bricks, setBricks] = useState<Brick[]>([])
+  const [movingDirection, setMovingDirection] = useState<'left' | 'right' | null>(null)
 
   // 初始化砖块
   const initBricks = useCallback(() => {
@@ -220,9 +220,14 @@ const BreakoutGame = () => {
             brick.destroyed = true
             setScore(prev => prev + brick.points)
           } else {
-            // 降低砖块颜色强度表示损坏
-            const alpha = brick.hits / BRICK_COLORS.find(c => c.color === brick.color)!.hits
-            brick.color = brick.color + Math.floor(alpha * 255).toString(16).padStart(2, '0')
+            // 根据剩余击打次数调整颜色透明度（修复颜色处理问题）
+            const originalColor = BRICK_COLORS.find(c => brick.points === c.points)
+            if (originalColor) {
+              const maxHits = originalColor.hits
+              const alpha = 0.5 + (brick.hits / maxHits) * 0.5
+              // 使用CSS rgba格式，避免直接修改hex颜色
+              brick.color = `rgba(${parseInt(originalColor.color.slice(1, 3), 16)}, ${parseInt(originalColor.color.slice(3, 5), 16)}, ${parseInt(originalColor.color.slice(5, 7), 16)}, ${alpha})`
+            }
           }
           
           // 改进的反弹逻辑
@@ -253,6 +258,9 @@ const BreakoutGame = () => {
               ball.y = brick.y + brick.height + ball.radius + 1
             }
           }
+          
+          // 避免多次碰撞检测
+          return
         }
       }
     })
@@ -315,7 +323,7 @@ const BreakoutGame = () => {
   // 清理函数
   useEffect(() => {
     return () => {
-      stopMovingPaddle()
+      setMovingDirection(null)
     }
   }, [])
 
@@ -341,31 +349,30 @@ const BreakoutGame = () => {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [isPlaying, gameOver])
 
-  // 移动挡板
-  const startMovingPaddle = (direction: 'left' | 'right') => {
-    if (!isPlaying || gameOver) return
+  // 持续移动挡板（优化移动速度和响应）
+  useEffect(() => {
+    if (!isPlaying || gameOver || !movingDirection) return
     
-    // 清除之前的移动
-    if (moveIntervalRef.current) {
-      clearInterval(moveIntervalRef.current)
-    }
-    
-    // 开始持续移动
-    moveIntervalRef.current = window.setInterval(() => {
+    const moveInterval = setInterval(() => {
       setPaddle(prev => ({
         ...prev,
-        x: direction === 'left' 
-          ? Math.max(0, prev.x - 10)
-          : Math.min(CANVAS_WIDTH - PADDLE_WIDTH, prev.x + 10)
+        x: movingDirection === 'left' 
+          ? Math.max(0, prev.x - 15) // 增加移动速度
+          : Math.min(CANVAS_WIDTH - PADDLE_WIDTH, prev.x + 15)
       }))
-    }, 30)
+    }, 20) // 减少间隔时间，使移动更流畅
+    
+    return () => clearInterval(moveInterval)
+  }, [isPlaying, gameOver, movingDirection])
+
+  // 移动挡板控制函数
+  const startMovingPaddle = (direction: 'left' | 'right') => {
+    if (!isPlaying || gameOver) return
+    setMovingDirection(direction)
   }
 
   const stopMovingPaddle = () => {
-    if (moveIntervalRef.current) {
-      clearInterval(moveIntervalRef.current)
-      moveIntervalRef.current = undefined
-    }
+    setMovingDirection(null)
   }
 
   // 点击控制 - 点击画布左右两侧
@@ -550,8 +557,11 @@ const BreakoutGame = () => {
                   e.preventDefault()
                   stopMovingPaddle()
                 }}
-                onTouchCancel={stopMovingPaddle}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center touch-none"
+                onTouchCancel={(e) => {
+                  e.preventDefault()
+                  stopMovingPaddle()
+                }}
+                className="p-4 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white rounded-lg transition-all flex items-center justify-center touch-none select-none"
                 disabled={!isPlaying || gameOver}
               >
                 <ChevronLeft size={24} />
@@ -579,8 +589,11 @@ const BreakoutGame = () => {
                   e.preventDefault()
                   stopMovingPaddle()
                 }}
-                onTouchCancel={stopMovingPaddle}
-                className="p-4 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center touch-none"
+                onTouchCancel={(e) => {
+                  e.preventDefault()
+                  stopMovingPaddle()
+                }}
+                className="p-4 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white rounded-lg transition-all flex items-center justify-center touch-none select-none"
                 disabled={!isPlaying || gameOver}
               >
                 <ChevronRight size={24} />
