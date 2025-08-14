@@ -11,7 +11,7 @@ interface Position {
 const GRID_SIZE = 20
 const INITIAL_SNAKE: Position[] = [{ x: 10, y: 10 }]
 const INITIAL_FOOD: Position = { x: 15, y: 15 }
-const INITIAL_SPEED = 150
+const INITIAL_SPEED = 220  // 从150改为220，降低移动速度
 
 const SnakeGame = () => {
   const navigate = useNavigate()
@@ -194,15 +194,15 @@ const SnakeGame = () => {
       const screenWidth = window.innerWidth
       const screenHeight = window.innerHeight
       // 更精确计算可用空间，确保在移动端完全显示
-      const headerHeight = 80 // 减小头部区域高度
-      const controlsHeight = 160 // 控制按钮区域高度
-      const padding = 40 // 边距
+      const headerHeight = 60 // 进一步减小头部区域高度
+      const controlsHeight = 120 // 减小控制按钮区域高度
+      const padding = 20 // 减小边距
       const availableHeight = screenHeight - headerHeight - controlsHeight - padding
       const availableWidth = screenWidth - padding
       
       // 在移动端使用更小的最大尺寸
       const isMobile = screenWidth < 768
-      const maxGameSize = isMobile ? 320 : 400
+      const maxGameSize = isMobile ? 300 : 400  // 减小移动端最大尺寸
       
       const maxSize = Math.min(availableWidth, availableHeight, maxGameSize)
       return Math.floor(maxSize / GRID_SIZE)
@@ -221,48 +221,48 @@ const SnakeGame = () => {
   }, [])
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex flex-col p-2 overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex flex-col p-1 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-2xl mx-auto flex flex-col h-full"
       >
-        {/* 游戏头部 - 精简版 */}
-        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-2 sm:p-3 mb-2 flex-shrink-0">
-          <div className="flex items-center justify-between mb-1 sm:mb-2">
+        {/* 游戏头部 - 进一步精简 */}
+        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-1.5 sm:p-2 mb-1 flex-shrink-0">
+          <div className="flex items-center justify-between mb-0.5 sm:mb-1">
             <button
               onClick={() => navigate('/')}
-              className="p-1.5 sm:p-2 text-gray-400 hover:text-white"
+              className="p-1 sm:p-1.5 text-gray-400 hover:text-white"
             >
-              <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
+              <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
-            <h1 className="text-lg sm:text-xl font-game font-bold text-white">贪吃蛇</h1>
+            <h1 className="text-base sm:text-lg font-game font-bold text-white">贪吃蛇</h1>
             <button
               onClick={resetGame}
-              className="p-1.5 sm:p-2 text-white"
+              className="p-1 sm:p-1.5 text-white"
             >
-              <RotateCcw size={16} className="sm:w-[18px] sm:h-[18px]" />
+              <RotateCcw size={14} className="sm:w-4 sm:h-4" />
             </button>
           </div>
 
-          {/* 游戏信息 - 精简 */}
-          <div className="flex justify-between items-center text-xs sm:text-sm">
-            <div className="flex items-center gap-1 sm:gap-2">
+          {/* 游戏信息 - 进一步精简 */}
+          <div className="flex justify-between items-center text-xs">
+            <div className="flex items-center gap-1">
               <span className="text-gray-400">分数:</span>
               <span className="text-white font-bold">{score}</span>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Trophy size={14} className="text-yellow-400 sm:w-4 sm:h-4" />
+            <div className="flex items-center gap-1">
+              <Trophy size={12} className="text-yellow-400" />
               <span className="text-yellow-400 font-bold">{highScore}</span>
             </div>
           </div>
         </div>
 
-        {/* 游戏区域 - 调整为自适应布局 */}
-        <div className="flex-1 flex flex-col items-center justify-center min-h-0 py-2">
+        {/* 游戏区域 - 减少padding */}
+        <div className="flex-1 flex flex-col items-center justify-center min-h-0 py-1">
           <div 
             ref={gameRef}
-            className="relative bg-gray-800 rounded-lg p-1"
+            className="relative bg-gray-800 rounded-lg p-0.5"
           >
             <div 
               className="relative bg-gray-900 rounded"
@@ -368,53 +368,53 @@ const SnakeGame = () => {
             </div>
           </div>
 
-          {/* 控制按钮 - 移动端优化，确保固定在底部 */}
-          <div className="mt-2 sm:mt-4 w-full max-w-xs flex-shrink-0">
-            {/* 方向控制 - 十字键布局，调整按钮大小 */}
-            <div className="grid grid-cols-3 gap-1 sm:gap-2">
+          {/* 控制按钮 - 进一步优化尺寸 */}
+          <div className="mt-1 sm:mt-2 w-full max-w-xs flex-shrink-0">
+            {/* 方向控制 - 减小按钮尺寸和间距 */}
+            <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
               <div />
               <button
                 onClick={() => changeDirection('UP')}
-                className="p-2 sm:p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-1.5 sm:p-2 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronUp size={18} className="sm:w-5 sm:h-5" />
+                <ChevronUp size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
               <div />
               
               <button
                 onClick={() => changeDirection('LEFT')}
-                className="p-2 sm:p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-1.5 sm:p-2 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronLeftIcon size={18} className="sm:w-5 sm:h-5" />
+                <ChevronLeftIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
               
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className={`p-2 sm:p-3 ${
+                className={`p-1.5 sm:p-2 ${
                   isPlaying ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'
                 } text-white rounded-lg transition-all active:scale-95 flex items-center justify-center`}
                 disabled={gameOver}
               >
-                {isPlaying ? <Pause size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Play size={16} className="sm:w-[18px] sm:h-[18px]" />}
+                {isPlaying ? <Pause size={14} className="sm:w-4 sm:h-4" /> : <Play size={14} className="sm:w-4 sm:h-4" />}
               </button>
               
               <button
                 onClick={() => changeDirection('RIGHT')}
-                className="p-2 sm:p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-1.5 sm:p-2 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronRight size={18} className="sm:w-5 sm:h-5" />
+                <ChevronRight size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
               
               <div />
               <button
                 onClick={() => changeDirection('DOWN')}
-                className="p-2 sm:p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-1.5 sm:p-2 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronDown size={18} className="sm:w-5 sm:h-5" />
+                <ChevronDown size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
               <div />
             </div>
