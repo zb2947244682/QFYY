@@ -193,12 +193,18 @@ const SnakeGame = () => {
     if (typeof window !== 'undefined') {
       const screenWidth = window.innerWidth
       const screenHeight = window.innerHeight
-      // 考虑头部信息和控制按钮的空间，更精确计算可用空间
-      const headerHeight = 120 // 头部区域高度
-      const controlsHeight = 180 // 控制按钮区域高度
-      const padding = 32 // 边距
+      // 更精确计算可用空间，确保在移动端完全显示
+      const headerHeight = 80 // 减小头部区域高度
+      const controlsHeight = 160 // 控制按钮区域高度
+      const padding = 40 // 边距
       const availableHeight = screenHeight - headerHeight - controlsHeight - padding
-      const maxSize = Math.min(screenWidth - padding, availableHeight, 400)
+      const availableWidth = screenWidth - padding
+      
+      // 在移动端使用更小的最大尺寸
+      const isMobile = screenWidth < 768
+      const maxGameSize = isMobile ? 320 : 400
+      
+      const maxSize = Math.min(availableWidth, availableHeight, maxGameSize)
       return Math.floor(maxSize / GRID_SIZE)
     }
     return 16
@@ -215,45 +221,45 @@ const SnakeGame = () => {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex flex-col p-2 overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex flex-col p-2 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl mx-auto flex flex-col h-screen"
+        className="w-full max-w-2xl mx-auto flex flex-col h-full"
       >
         {/* 游戏头部 - 精简版 */}
-        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-3 mb-2 flex-shrink-0">
-          <div className="flex items-center justify-between mb-2">
+        <div className="bg-gray-800/50 backdrop-blur rounded-xl p-2 sm:p-3 mb-2 flex-shrink-0">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
             <button
               onClick={() => navigate('/')}
-              className="p-2 text-gray-400 hover:text-white"
+              className="p-1.5 sm:p-2 text-gray-400 hover:text-white"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
             </button>
-            <h1 className="text-xl font-game font-bold text-white">贪吃蛇</h1>
+            <h1 className="text-lg sm:text-xl font-game font-bold text-white">贪吃蛇</h1>
             <button
               onClick={resetGame}
-              className="p-2 text-white"
+              className="p-1.5 sm:p-2 text-white"
             >
-              <RotateCcw size={18} />
+              <RotateCcw size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
           </div>
 
           {/* 游戏信息 - 精简 */}
-          <div className="flex justify-between items-center text-sm">
-            <div className="flex items-center gap-2">
+          <div className="flex justify-between items-center text-xs sm:text-sm">
+            <div className="flex items-center gap-1 sm:gap-2">
               <span className="text-gray-400">分数:</span>
               <span className="text-white font-bold">{score}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Trophy size={16} className="text-yellow-400" />
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Trophy size={14} className="text-yellow-400 sm:w-4 sm:h-4" />
               <span className="text-yellow-400 font-bold">{highScore}</span>
             </div>
           </div>
         </div>
 
         {/* 游戏区域 - 调整为自适应布局 */}
-        <div className="flex-1 flex flex-col items-center justify-center min-h-0">
+        <div className="flex-1 flex flex-col items-center justify-center min-h-0 py-2">
           <div 
             ref={gameRef}
             className="relative bg-gray-800 rounded-lg p-1"
@@ -362,53 +368,53 @@ const SnakeGame = () => {
             </div>
           </div>
 
-          {/* 控制按钮 - 移动端优化，添加z-index确保按钮在最上层 */}
-          <div className="mt-4 w-full max-w-xs flex-shrink-0">
-            {/* 方向控制 - 十字键布局 */}
-            <div className="grid grid-cols-3 gap-2">
+          {/* 控制按钮 - 移动端优化，确保固定在底部 */}
+          <div className="mt-2 sm:mt-4 w-full max-w-xs flex-shrink-0">
+            {/* 方向控制 - 十字键布局，调整按钮大小 */}
+            <div className="grid grid-cols-3 gap-1 sm:gap-2">
               <div />
               <button
                 onClick={() => changeDirection('UP')}
-                className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-2 sm:p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronUp size={20} />
+                <ChevronUp size={18} className="sm:w-5 sm:h-5" />
               </button>
               <div />
               
               <button
                 onClick={() => changeDirection('LEFT')}
-                className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-2 sm:p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronLeftIcon size={20} />
+                <ChevronLeftIcon size={18} className="sm:w-5 sm:h-5" />
               </button>
               
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className={`p-3 ${
+                className={`p-2 sm:p-3 ${
                   isPlaying ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'
                 } text-white rounded-lg transition-all active:scale-95 flex items-center justify-center`}
                 disabled={gameOver}
               >
-                {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                {isPlaying ? <Pause size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Play size={16} className="sm:w-[18px] sm:h-[18px]" />}
               </button>
               
               <button
                 onClick={() => changeDirection('RIGHT')}
-                className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-2 sm:p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronRight size={20} />
+                <ChevronRight size={18} className="sm:w-5 sm:h-5" />
               </button>
               
               <div />
               <button
                 onClick={() => changeDirection('DOWN')}
-                className="p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
+                className="p-2 sm:p-3 bg-gray-700 hover:bg-gray-600 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center"
                 disabled={!isPlaying || gameOver}
               >
-                <ChevronDown size={20} />
+                <ChevronDown size={18} className="sm:w-5 sm:h-5" />
               </button>
               <div />
             </div>
